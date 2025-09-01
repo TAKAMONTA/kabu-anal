@@ -9,7 +9,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Read(C:\\Users\\tnaka\\OneDrive\\Pictures\\Screenshots/**)",
-      "Read(C:\\Users\\tnaka\\OneDrive\\Pictures\\Screenshots/**)"
+      "Read(C:\\Users\\tnaka\\OneDrive\\Pictures\\Screenshots/**)",
+      "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)",
+      "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)",
+      "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)"
     ],
     "deny": [],
     "ask": []

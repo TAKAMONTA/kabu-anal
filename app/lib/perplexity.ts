@@ -63,11 +63,8 @@ class PerplexityClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online', // 正しいPerplexityモデル名
+        model: 'sonar-pro', // Perplexity API モデル
         messages,
-        max_tokens: 1000,
-        temperature: 0.2,
-        top_p: 0.9,
       }),
     });
 
