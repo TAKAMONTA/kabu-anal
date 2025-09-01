@@ -1,0 +1,25 @@
+{
+  "name": "kabu-ana-simple",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.21",
+    "firebase": "^12.2.1",
+    "next": "14.2.3",
+    "postcss": "^8.5.6",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.12.12",
+    "@types/react": "18.3.2",
+    "@types/react-dom": "18.3.0",
+    "tailwindcss": "^4.1.12",
+    "typescript": "5.4.5"
+  }
+}
