@@ -39,10 +39,17 @@ export async function POST(request: NextRequest) {
     try {
       const perplexity = getPerplexityClient();
       
-      // 検索クエリの構築
+      // 検索クエリの構築 - より明確な指示
       let searchQuery = '';
       if (searchType === 'stock') {
-        searchQuery = `株式銘柄「${query}」について、証券コードと企業名を教えてください。日本株なら4桁の証券コード、米国株ならティッカーシンボルを含めてください。`;
+        // 米国株のティッカーシンボルらしいパターンを検出
+        if (/^[A-Z]{2,5}$/.test(query.toUpperCase())) {
+          searchQuery = `米国株式ティッカーシンボル"${query.toUpperCase()}"について、正式な企業名と株価情報を教えてください。NYSEまたはNASDAQに上場している${query.toUpperCase()}の情報を提供してください。`;
+        } else if (/^\d{4}$/.test(query)) {
+          searchQuery = `日本株式証券コード"${query}"について、正式な企業名と株価情報を教えてください。東証上場の${query}の情報を提供してください。`;
+        } else {
+          searchQuery = `株式銘柄「${query}」について、詳細情報を教えてください。もしティッカーシンボルであれば、そのティッカーと企業名を含めてください。例: "BLSH (Bullish)" または "Bullish (BLSH)"のように表記してください。`;
+        }
       } else {
         searchQuery = query;
       }
@@ -55,7 +62,10 @@ export async function POST(request: NextRequest) {
       });
 
       const content = response.choices[0]?.message?.content || '';
-      console.log('Perplexity API response received, content length:', content.length);
+      console.log('=== Perplexity API Response ===');
+      console.log('Content length:', content.length);
+      console.log('Full content:', content);
+      console.log('============================');
       
       // 検索結果から銘柄情報を抽出
       const stocks = extractStockInfo(content);
@@ -91,7 +101,10 @@ export async function POST(request: NextRequest) {
 
 // フォールバック検索（Perplexity APIが利用できない場合）
 function fallbackSearch(query: string) {
+  const upperQuery = query.toUpperCase();
   const lowerQuery = query.toLowerCase();
+  
+  console.log(`Fallback search for: ${query}`);
   
   // 基本的な銘柄データ（Perplexity APIが使えない時用）
   const stockDatabase = [
@@ -138,14 +151,28 @@ function fallbackSearch(query: string) {
     { code: 'CRM', name: 'Salesforce Inc.', market: 'US', industry: 'Cloud Software' },
     { code: 'ORCL', name: 'Oracle Corporation', market: 'US', industry: 'Enterprise Software' },
     { code: 'IBM', name: 'IBM Corporation', market: 'US', industry: 'Technology Services' },
+    // 追加の米国株
+    { code: 'BLSH', name: 'Bullish', market: 'US', industry: 'Digital Assets' },
+    { code: 'COIN', name: 'Coinbase Global', market: 'US', industry: 'Cryptocurrency Exchange' },
+    { code: 'SQ', name: 'Block Inc. (Square)', market: 'US', industry: 'Digital Payments' },
+    { code: 'PYPL', name: 'PayPal Holdings', market: 'US', industry: 'Digital Payments' },
+    { code: 'UBER', name: 'Uber Technologies', market: 'US', industry: 'Transportation' },
+    { code: 'LYFT', name: 'Lyft Inc.', market: 'US', industry: 'Transportation' },
+    { code: 'ABNB', name: 'Airbnb Inc.', market: 'US', industry: 'Travel' },
+    { code: 'ZM', name: 'Zoom Video Communications', market: 'US', industry: 'Communication' },
+    { code: 'ROKU', name: 'Roku Inc.', market: 'US', industry: 'Streaming' },
+    { code: 'SPOT', name: 'Spotify Technology', market: 'US', industry: 'Streaming' },
   ];
 
-  // 検索ロジック
+  // 検索ロジック - 大文字小文字を考慮
   const results = stockDatabase.filter(stock => 
+    stock.code.toUpperCase() === upperQuery ||
     stock.code.toLowerCase().includes(lowerQuery) ||
     stock.name.toLowerCase().includes(lowerQuery) ||
     stock.industry.toLowerCase().includes(lowerQuery)
   );
+  
+  console.log(`Fallback search results: ${results.length} found`);
 
   return NextResponse.json({
     results: results.map(stock => ({
@@ -171,17 +198,18 @@ function extractStockInfo(content: string): Array<{
   // AIの回答から銘柄情報を構造化して抽出を試みる
   const stocks: Array<any> = [];
   
-  // Perplexityの回答をデバッグ出力
-  console.log('Perplexity response content:', content.substring(0, 500));
+  console.log('=== Extracting Stock Info ===');
+  console.log('Content preview:', content.substring(0, 500));
   
-  // パターン1: 「企業名（証券コード）」形式
-  const pattern1 = /([^（\(]+)[（\(](\d{4}|[A-Z]{1,5})[）\)]/g;
+  // パターン1: 「企業名（証券コード）」形式 - より柔軟なパターン
+  const pattern1 = /([^（\(\n]+?)[（\(]([A-Z]{1,5}|\d{4})[）\)]/gi;
   let match;
   while ((match = pattern1.exec(content)) !== null) {
     const name = match[1].trim();
-    const code = match[2];
+    const code = match[2].toUpperCase();
     const market = /^\d{4}$/.test(code) ? 'JP' : 'US';
     
+    console.log(`Pattern1 match: ${name} (${code})`);
     stocks.push({
       code,
       name,
@@ -190,7 +218,41 @@ function extractStockInfo(content: string): Array<{
     });
   }
   
-  // パターン2: 証券コードまたはティッカーシンボル単独
+  // パターン2: ティッカーシンボルの前後から情報を抽出
+  // 例: "BLSH: Bullish" や "Bullish (BLSH)" など
+  const tickerPatterns = [
+    /\b([A-Z]{2,5}):\s*([^\n,;]+)/gi,  // BLSH: Bullish
+    /([^\n,;]+?)\s*\(([A-Z]{2,5})\)/gi, // Bullish (BLSH)
+    /ティッカー[：:]*\s*([A-Z]{2,5})/gi,  // ティッカー: BLSH
+    /NYSE:\s*([A-Z]{2,5})/gi,            // NYSE: BLSH
+    /NASDAQ:\s*([A-Z]{2,5})/gi,          // NASDAQ: BLSH
+  ];
+  
+  tickerPatterns.forEach(pattern => {
+    const matches = content.matchAll(pattern);
+    for (const m of matches) {
+      let code, name;
+      if (m[1].match(/^[A-Z]{2,5}$/)) {
+        code = m[1];
+        name = m[2]?.trim() || code;
+      } else {
+        name = m[1].trim();
+        code = m[2];
+      }
+      
+      if (code && !stocks.find(s => s.code === code)) {
+        console.log(`Ticker pattern match: ${code} - ${name}`);
+        stocks.push({
+          code,
+          name,
+          market: 'US',
+          description: `${name}`
+        });
+      }
+    }
+  });
+  
+  // パターン3: 証券コードまたはティッカーシンボル単独
   const jpPattern = /\b(\d{4})\b/g;
   const usPattern = /\b([A-Z]{2,5})\b/g;
   
@@ -214,13 +276,25 @@ function extractStockInfo(content: string): Array<{
   }
   
   // 米国株ティッカー検索（一般的な単語を除外）
-  const excludeWords = ['AI', 'API', 'NYSE', 'NASDAQ', 'ETF', 'IPO', 'CEO', 'CFO', 'CTO', 'GDP', 'USA', 'JP'];
+  const excludeWords = ['AI', 'API', 'NYSE', 'NASDAQ', 'ETF', 'IPO', 'CEO', 'CFO', 'CTO', 'GDP', 'USA', 'JP', 'US', 'NY', 'LA'];
   const usMatches = content.match(usPattern);
   if (usMatches) {
     usMatches.forEach(code => {
       if (!excludeWords.includes(code) && !stocks.find(s => s.code === code)) {
-        // ティッカーシンボルとして妥当そうなものだけ
-        if (content.includes(`${code}株`) || content.includes(`${code}の`) || content.includes(`(${code})`)) {
+        // ティッカーシンボルとして妥当そうなものを検出
+        // 前後の文脈をチェック
+        const contextPatterns = [
+          new RegExp(`${code}[\s：:]+[^\n]+`, 'i'),
+          new RegExp(`\(${code}\)`, 'i'),
+          new RegExp(`${code}株`, 'i'),
+          new RegExp(`${code}[のは]`, 'i'),
+          new RegExp(`ティッカー.*${code}`, 'i'),
+          new RegExp(`証券.*${code}`, 'i'),
+        ];
+        
+        const hasContext = contextPatterns.some(p => p.test(content));
+        if (hasContext) {
+          console.log(`US ticker found in context: ${code}`);
           stocks.push({
             code,
             name: code,
@@ -237,7 +311,10 @@ function extractStockInfo(content: string): Array<{
     index === self.findIndex(s => s.code === stock.code)
   );
   
-  console.log('Extracted stocks:', uniqueStocks);
+  console.log('=== Extraction Results ===');
+  console.log('Total extracted stocks:', uniqueStocks.length);
+  console.log('Stocks:', JSON.stringify(uniqueStocks, null, 2));
+  console.log('========================');
   
   return uniqueStocks.slice(0, 10); // 最大10件まで
 }

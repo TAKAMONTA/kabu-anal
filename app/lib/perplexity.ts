@@ -63,7 +63,7 @@ class PerplexityClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online', // リアルタイム検索対応モデル
+        model: 'sonar-small-online', // Perplexity公式のモデル名
         messages,
         max_tokens: 1000,
         temperature: 0.2,
@@ -76,7 +76,13 @@ class PerplexityClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Perplexity API error: ${response.status} - ${error.message || 'Unknown error'}`);
+      console.error('Perplexity API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: error,
+        body: JSON.stringify({ model: 'sonar-small-online', messages })
+      });
+      throw new Error(`Perplexity API error: ${response.status} - ${JSON.stringify(error)}`);
     }
 
     return response.json();
