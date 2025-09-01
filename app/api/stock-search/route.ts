@@ -42,21 +42,29 @@ export async function POST(request: NextRequest) {
       // 検索クエリの構築
       let searchQuery = '';
       if (searchType === 'stock') {
-        searchQuery = `日本または米国の株式市場で「${query}」に関連する企業を検索してください。証券コード、企業名、業種、最新の株価情報を含めてください。`;
+        searchQuery = `株式銘柄「${query}」について、証券コードと企業名を教えてください。日本株なら4桁の証券コード、米国株ならティッカーシンボルを含めてください。`;
       } else {
         searchQuery = query;
       }
 
+      console.log('Searching with Perplexity API:', searchQuery);
+
       // Perplexity APIで検索
       const response = await perplexity.search(searchQuery, {
-        search_recency_filter: 'month',
         return_citations: true,
       });
 
       const content = response.choices[0]?.message?.content || '';
+      console.log('Perplexity API response received, content length:', content.length);
       
       // 検索結果から銘柄情報を抽出
       const stocks = extractStockInfo(content);
+      
+      // 結果が空の場合はフォールバックも試す
+      if (stocks.length === 0) {
+        console.log('No stocks extracted from Perplexity response, trying fallback');
+        return fallbackSearch(query);
+      }
       
       return NextResponse.json({
         results: stocks,
@@ -87,7 +95,7 @@ function fallbackSearch(query: string) {
   
   // 基本的な銘柄データ（Perplexity APIが使えない時用）
   const stockDatabase = [
-    // 日本株
+    // 日本株 - 主要銘柄
     { code: '7203', name: 'トヨタ自動車', market: 'JP', industry: '自動車' },
     { code: '6758', name: 'ソニーグループ', market: 'JP', industry: 'エレクトロニクス' },
     { code: '9432', name: '日本電信電話', market: 'JP', industry: '通信' },
@@ -98,8 +106,18 @@ function fallbackSearch(query: string) {
     { code: '9984', name: 'ソフトバンクグループ', market: 'JP', industry: '通信・投資' },
     { code: '7267', name: 'ホンダ', market: 'JP', industry: '自動車' },
     { code: '6902', name: 'デンソー', market: 'JP', industry: '自動車部品' },
+    { code: '6501', name: '日立製作所', market: 'JP', industry: '総合電機' },
+    { code: '6702', name: '富士通', market: 'JP', industry: 'IT・通信' },
+    { code: '7751', name: 'キヤノン', market: 'JP', industry: '精密機器' },
+    { code: '6981', name: '村田製作所', market: 'JP', industry: '電子部品' },
+    { code: '4661', name: 'オリエンタルランド', market: 'JP', industry: 'レジャー' },
+    { code: '9433', name: 'KDDI', market: 'JP', industry: '通信' },
+    { code: '8035', name: '東京エレクトロン', market: 'JP', industry: '半導体製造装置' },
+    { code: '4502', name: '武田薬品工業', market: 'JP', industry: '医薬品' },
+    { code: '7974', name: '任天堂', market: 'JP', industry: 'ゲーム' },
+    { code: '8058', name: '三菱商事', market: 'JP', industry: '商社' },
     
-    // 米国株
+    // 米国株 - 主要銘柄
     { code: 'AAPL', name: 'Apple Inc.', market: 'US', industry: 'Technology' },
     { code: 'MSFT', name: 'Microsoft Corporation', market: 'US', industry: 'Software' },
     { code: 'GOOGL', name: 'Alphabet Inc.', market: 'US', industry: 'Internet' },
@@ -110,6 +128,16 @@ function fallbackSearch(query: string) {
     { code: 'BRK.B', name: 'Berkshire Hathaway Inc.', market: 'US', industry: 'Conglomerate' },
     { code: 'JPM', name: 'JPMorgan Chase & Co.', market: 'US', industry: 'Banking' },
     { code: 'V', name: 'Visa Inc.', market: 'US', industry: 'Payment Processing' },
+    { code: 'JNJ', name: 'Johnson & Johnson', market: 'US', industry: 'Healthcare' },
+    { code: 'WMT', name: 'Walmart Inc.', market: 'US', industry: 'Retail' },
+    { code: 'PG', name: 'Procter & Gamble', market: 'US', industry: 'Consumer Goods' },
+    { code: 'MA', name: 'Mastercard Inc.', market: 'US', industry: 'Payment Processing' },
+    { code: 'DIS', name: 'Walt Disney Co.', market: 'US', industry: 'Entertainment' },
+    { code: 'NFLX', name: 'Netflix Inc.', market: 'US', industry: 'Streaming' },
+    { code: 'ADBE', name: 'Adobe Inc.', market: 'US', industry: 'Software' },
+    { code: 'CRM', name: 'Salesforce Inc.', market: 'US', industry: 'Cloud Software' },
+    { code: 'ORCL', name: 'Oracle Corporation', market: 'US', industry: 'Enterprise Software' },
+    { code: 'IBM', name: 'IBM Corporation', market: 'US', industry: 'Technology Services' },
   ];
 
   // 検索ロジック
@@ -140,54 +168,76 @@ function extractStockInfo(content: string): Array<{
   change?: string;
   description?: string;
 }> {
+  // AIの回答から銘柄情報を構造化して抽出を試みる
   const stocks: Array<any> = [];
   
-  // 証券コードパターン（日本株: 4桁数字、米国株: 1-5文字の大文字）
-  const jpPattern = /\b(\d{4})\b/g;
-  const usPattern = /\b([A-Z]{1,5})\b/g;
+  // Perplexityの回答をデバッグ出力
+  console.log('Perplexity response content:', content.substring(0, 500));
   
-  // 簡易的な抽出ロジック（実際はより高度な自然言語処理が必要）
-  const lines = content.split('\n');
-  
-  lines.forEach(line => {
-    // 日本株の検出
-    const jpMatches = line.match(jpPattern);
-    if (jpMatches) {
-      jpMatches.forEach(code => {
-        // コードの前後から企業名を推測
-        const nameMatch = line.match(new RegExp(`(\\S+(?:\\s+\\S+)*?)\\s*[（(]?${code}[）)]?`));
-        if (nameMatch) {
-          stocks.push({
-            code,
-            name: nameMatch[1],
-            market: 'JP',
-            description: line
-          });
-        }
-      });
-    }
+  // パターン1: 「企業名（証券コード）」形式
+  const pattern1 = /([^（\(]+)[（\(](\d{4}|[A-Z]{1,5})[）\)]/g;
+  let match;
+  while ((match = pattern1.exec(content)) !== null) {
+    const name = match[1].trim();
+    const code = match[2];
+    const market = /^\d{4}$/.test(code) ? 'JP' : 'US';
     
-    // 米国株の検出
-    const usMatches = line.match(usPattern);
-    if (usMatches) {
-      usMatches.forEach(code => {
-        // ティッカーシンボルとして妥当なものだけ
-        if (code.length >= 1 && code.length <= 5 && !['THE', 'AND', 'FOR', 'NYSE', 'NASDAQ'].includes(code)) {
+    stocks.push({
+      code,
+      name,
+      market,
+      description: `${name}の株式情報`
+    });
+  }
+  
+  // パターン2: 証券コードまたはティッカーシンボル単独
+  const jpPattern = /\b(\d{4})\b/g;
+  const usPattern = /\b([A-Z]{2,5})\b/g;
+  
+  // 日本株コード検索
+  const jpMatches = content.match(jpPattern);
+  if (jpMatches) {
+    jpMatches.forEach(code => {
+      // 既に追加済みでなければ追加
+      if (!stocks.find(s => s.code === code)) {
+        // 前後のテキストから企業名を推定
+        const regex = new RegExp(`([^。、\\n]+?)\\s*[（(]?${code}[）)]?`, 'g');
+        const nameMatch = regex.exec(content);
+        stocks.push({
+          code,
+          name: nameMatch ? nameMatch[1].trim() : `銘柄 ${code}`,
+          market: 'JP',
+          description: `証券コード: ${code}`
+        });
+      }
+    });
+  }
+  
+  // 米国株ティッカー検索（一般的な単語を除外）
+  const excludeWords = ['AI', 'API', 'NYSE', 'NASDAQ', 'ETF', 'IPO', 'CEO', 'CFO', 'CTO', 'GDP', 'USA', 'JP'];
+  const usMatches = content.match(usPattern);
+  if (usMatches) {
+    usMatches.forEach(code => {
+      if (!excludeWords.includes(code) && !stocks.find(s => s.code === code)) {
+        // ティッカーシンボルとして妥当そうなものだけ
+        if (content.includes(`${code}株`) || content.includes(`${code}の`) || content.includes(`(${code})`)) {
           stocks.push({
             code,
-            name: code, // 名前は後で補完
+            name: code,
             market: 'US',
-            description: line
+            description: `ティッカー: ${code}`
           });
         }
-      });
-    }
-  });
+      }
+    });
+  }
   
   // 重複を除去
   const uniqueStocks = stocks.filter((stock, index, self) =>
     index === self.findIndex(s => s.code === stock.code)
   );
+  
+  console.log('Extracted stocks:', uniqueStocks);
   
   return uniqueStocks.slice(0, 10); // 最大10件まで
 }

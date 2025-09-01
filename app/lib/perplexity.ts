@@ -2,8 +2,6 @@
 
 interface PerplexitySearchRequest {
   query: string;
-  search_domain?: 'auto' | 'academic' | 'writing' | 'wolfram' | 'youtube' | 'reddit';
-  search_recency_filter?: 'day' | 'week' | 'month' | 'year';
   return_citations?: boolean;
   return_images?: boolean;
   return_related_questions?: boolean;
@@ -70,11 +68,9 @@ class PerplexityClient {
         max_tokens: 1000,
         temperature: 0.2,
         top_p: 0.9,
-        search_domain_filter: ['perplexity.ai'],
-        return_citations: true,
-        return_images: false,
-        return_related_questions: true,
-        ...options
+        return_citations: options?.return_citations !== false,
+        return_images: options?.return_images || false,
+        return_related_questions: options?.return_related_questions || false,
       }),
     });
 
@@ -98,7 +94,6 @@ class PerplexityClient {
 
     try {
       const response = await this.search(searchQuery, {
-        search_recency_filter: 'week', // 1週間以内の情報を優先
         return_citations: true,
       });
 
