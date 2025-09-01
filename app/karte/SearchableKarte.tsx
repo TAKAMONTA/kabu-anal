@@ -10,26 +10,7 @@ interface Stock {
   market?: string;
 }
 
-// 人気銘柄データ（検索補助用）
-const japanStocks: Stock[] = [
-  { code: '7203', name: 'トヨタ自動車', market: 'JP' },
-  { code: '6758', name: 'ソニーグループ', market: 'JP' },
-  { code: '9432', name: '日本電信電話', market: 'JP' },
-  { code: '6861', name: 'キーエンス', market: 'JP' },
-  { code: '9983', name: 'ファーストリテイリング', market: 'JP' },
-  { code: '8306', name: '三菱UFJフィナンシャル・グループ', market: 'JP' },
-];
-
-const usStocks: Stock[] = [
-  { code: 'AAPL', name: 'Apple Inc.', market: 'US' },
-  { code: 'MSFT', name: 'Microsoft', market: 'US' },
-  { code: 'GOOGL', name: 'Alphabet (Google)', market: 'US' },
-  { code: 'AMZN', name: 'Amazon', market: 'US' },
-  { code: 'NVDA', name: 'NVIDIA', market: 'US' },
-  { code: 'TSLA', name: 'Tesla', market: 'US' },
-];
-
-const allStocks = [...japanStocks, ...usStocks];
+// サンプルデータを削除 - Perplexity APIのみ使用
 
 export default function SearchableKarte() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -61,8 +42,7 @@ export default function SearchableKarte() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query: searchQuery,
-          searchType: 'stock'
+          query: searchQuery
         })
       });
 
@@ -77,60 +57,26 @@ export default function SearchableKarte() {
       const data = await response.json();
       
       if (data.results && data.results.length > 0) {
-        setSearchResults(data.results);
-        
-        // API使用状況の通知
-        if (data.searchType === 'fallback') {
-          setApiNote('📋 ローカルデータベースから検索しました');
-        } else {
-          setApiNote('🔍 Perplexity AIで最新の株式情報を検索しました');
-        }
+        // Perplexityの結果を表示
+        setSearchResults(data.results.map((result: any) => ({
+          code: result.query,
+          name: result.query,
+          content: result.content
+        })));
+        setApiNote('🔍 Perplexity AIで検索しました');
         setTimeout(() => setApiNote(''), 5000);
       } else {
-        // フォールバック検索
-        const query = searchQuery.toLowerCase();
-        const localResults = allStocks.filter(stock => 
-          stock.code.toLowerCase().includes(query) ||
-          stock.name.toLowerCase().includes(query)
-        );
-        
-        if (localResults.length > 0) {
-          setSearchResults(localResults);
-          setApiNote('📋 ローカルデータベースから検索しました');
-          setTimeout(() => setApiNote(''), 5000);
-        } else {
-          setErrorMessage('該当する銘柄が見つかりませんでした。銘柄コードまたは企業名を確認してください。');
-        }
+        setErrorMessage('検索結果がありませんでした');
       }
     } catch (error) {
       console.error('Search error:', error);
-      
-      // エラー時はローカル検索にフォールバック
-      const query = searchQuery.toLowerCase();
-      const localResults = allStocks.filter(stock => 
-        stock.code.toLowerCase().includes(query) ||
-        stock.name.toLowerCase().includes(query)
-      );
-      
-      if (localResults.length > 0) {
-        setSearchResults(localResults);
-        setApiNote('📋 ローカルデータベースから検索しました（Perplexity API利用不可）');
-        setTimeout(() => setApiNote(''), 5000);
-      } else {
-        setErrorMessage(error instanceof Error ? error.message : '検索中にエラーが発生しました。しばらくしてから再試行してください。');
-      }
+      setErrorMessage(error instanceof Error ? error.message : '検索中にエラーが発生しました');
     } finally {
       setIsSearching(false);
     }
   };
 
-  // 銘柄選択処理
-  const handleStockSelect = (stock: Stock) => {
-    setSelectedStock(stock);
-    setSearchQuery(stock.code + ' - ' + stock.name);
-    setSearchResults([]);
-    setErrorMessage('');
-  };
+  // 銘柄選択処理（削除 - 使用しない）
 
   // AIカルテ生成処理（3段階のAPI呼び出し）
   const generateKarte = async () => {
@@ -277,18 +223,31 @@ export default function SearchableKarte() {
         {/* 検索結果 */}
         {searchResults.length > 0 && (
           <div className="search-results">
-            <h3>検索結果（{searchResults.length}件）</h3>
+            <h3>Perplexity AI検索結果</h3>
             <div className="results-list">
-              {searchResults.map((stock) => (
+              {searchResults.map((stock: any, index: number) => (
                 <div 
-                  key={stock.code} 
-                  className={`result-item ${stock.market === 'US' ? 'us-stock' : ''}`}
-                  onClick={() => handleStockSelect(stock)}
+                  key={index} 
+                  className="result-item"
+                  style={{
+                    padding: '15px',
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '8px',
+                    marginBottom: '10px',
+                    cursor: 'default'
+                  }}
                 >
-                  <span className="stock-code">{stock.code}</span>
-                  <span className="stock-name">{stock.name}</span>
-                  {stock.market === 'US' && <span className="market-badge">🇺🇸</span>}
-                  {stock.market === 'JP' && <span className="market-badge">🇯🇵</span>}
+                  <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>
+                    🔍 {stock.code}
+                  </div>
+                  <div style={{ 
+                    whiteSpace: 'pre-wrap',
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    color: '#333'
+                  }}>
+                    {stock.content}
+                  </div>
                 </div>
               ))}
             </div>
@@ -336,40 +295,7 @@ export default function SearchableKarte() {
         )}
       </div>
 
-      {/* 人気銘柄 */}
-      <div className="sample-section">
-        <h3>🇯🇵 日本株 - 人気銘柄</h3>
-        <div className="sample-stocks">
-          {japanStocks.slice(0, 6).map((stock) => (
-            <div 
-              key={stock.code} 
-              className="stock-item"
-              onClick={() => handleStockSelect(stock)}
-              style={{ cursor: 'pointer' }}
-            >
-              <span className="stock-code">{stock.code}</span>
-              <span className="stock-name">{stock.name}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="sample-section">
-        <h3>🇺🇸 米国株 - 人気銘柄</h3>
-        <div className="sample-stocks">
-          {usStocks.slice(0, 6).map((stock) => (
-            <div 
-              key={stock.code} 
-              className="stock-item us-stock"
-              onClick={() => handleStockSelect(stock)}
-              style={{ cursor: 'pointer' }}
-            >
-              <span className="stock-code">{stock.code}</span>
-              <span className="stock-name">{stock.name}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* サンプル銘柄を削除 */}
 
       {/* AIカルテ表示 */}
       {showKarte && analysisData && (
