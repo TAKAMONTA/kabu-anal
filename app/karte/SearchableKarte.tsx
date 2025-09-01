@@ -48,6 +48,7 @@ export default function SearchableKarte() {
   const [showKarte, setShowKarte] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState('');
+  const [apiNote, setApiNote] = useState('');
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -94,12 +95,13 @@ export default function SearchableKarte() {
     }
     
     setIsGenerating(true);
-    setGenerationStep('企業情報を確認中...');
+    setGenerationStep('🤖 ChatGPTに企業情報を確認中...');
+    setApiNote('OpenAI APIを使用してChatGPTに分析を依頼しています');
     setErrorMessage('');
     
     try {
       // ステップ1: 企業を特定
-      setGenerationStep('企業情報を確認中... (1/3)');
+      setGenerationStep('🤖 ChatGPTに企業情報を聞いています... (1/3)');
       const step1Response = await fetch('/api/ai-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -111,13 +113,17 @@ export default function SearchableKarte() {
       });
       
       if (!step1Response.ok) {
-        throw new Error('企業情報の取得に失敗しました');
+        const errorData = await step1Response.json().catch(() => ({}));
+        if (step1Response.status === 429) {
+          throw new Error(`リクエスト制限: ${errorData.message || '少し待ってから再試行してください'}`);
+        }
+        throw new Error(errorData.error || '企業情報の取得に失敗しました');
       }
       
       const step1Data = await step1Response.json();
       
       // ステップ2: 株価を取得
-      setGenerationStep('最新の株価を取得中... (2/3)');
+      setGenerationStep('📊 ChatGPTに株価動向を分析してもらっています... (2/3)');
       const step2Response = await fetch('/api/ai-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,7 +142,7 @@ export default function SearchableKarte() {
       const step2Data = await step2Response.json();
       
       // ステップ3: 詳細分析
-      setGenerationStep('AI分析を実行中... (3/3)');
+      setGenerationStep('🌟 ChatGPTが詳細な投資分析を作成中... (3/3)');
       const step3Response = await fetch('/api/ai-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -174,6 +180,7 @@ export default function SearchableKarte() {
     } finally {
       setIsGenerating(false);
       setGenerationStep('');
+      setApiNote('');
     }
   };
 
@@ -285,10 +292,25 @@ export default function SearchableKarte() {
                     {generationStep || '生成中...'}
                   </>
                 ) : (
-                  '📊 AIカルテを生成'
+                  '🤖 ChatGPTに分析を依頼'
                 )}
               </button>
             </div>
+            {apiNote && (
+              <div style={{
+                marginTop: '10px',
+                padding: '10px',
+                backgroundColor: '#e3f2fd',
+                borderRadius: '8px',
+                fontSize: '14px',
+                color: '#1976d2',
+                display: 'flex',
+                alignItems: 'center'
+              }}>
+                <span style={{ marginRight: '8px' }}>ℹ️</span>
+                {apiNote}
+              </div>
+            )}
           </div>
         )}
       </div>

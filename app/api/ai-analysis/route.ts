@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import openai from "@/app/lib/openai";
+import { checkRateLimit } from "@/app/lib/rateLimiter";
 
 // APIルートハンドラー（段階的分析）
 export async function POST(request: NextRequest) {
   try {
+    // レート制限チェック（IPアドレスまたはユーザーIDベース）
+    const clientId = request.headers.get('x-forwarded-for') || 'anonymous';
+    const rateLimit = checkRateLimit(clientId);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          error: "リクエスト制限に達しました",
+          message: `${rateLimit.resetIn}秒後に再試行してください`,
+          resetIn: rateLimit.resetIn 
+        },
+        { status: 429 }
+      );
+    }
+
     const { stockCode, market, step, previousData } = await request.json();
 
     // 入力検証
@@ -60,34 +77,19 @@ export async function POST(request: NextRequest) {
 async function identifyCompany(stockCode: string, market: string) {
   const prompt =
     market === "JP"
-      ? `証券コード${stockCode}の企業はどこですか？正式な企業名を教えてください。`
-      : `ティッカーシンボル${stockCode}の企業はどこですか？正式な企業名を教えてください。`;
+      ? `証券コード${stockCode}の企業はどこですか？正式な企業名を教えてください。簡潔に企業名のみ答えてください。`
+      : `ティッカーシンボル${stockCode}の企業はどこですか？正式な企業名を教えてください。簡潔に企業名のみ答えてください。`;
 
-  // OpenAI APIを使用
+  // OpenAI SDKを使用
   try {
-    const openaiResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
-          max_tokens: 100,
-        }),
-      }
-    );
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.3,
+      max_tokens: 100,
+    });
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
-    }
-
-    const data = await openaiResponse.json();
-    const companyName = data.choices[0].message.content;
+    const companyName = completion.choices[0].message.content || "不明な企業";
     return NextResponse.json({ companyName, step: 1 });
   } catch (error) {
     console.error("OpenAI API error:", error);
@@ -107,36 +109,25 @@ async function identifyCompany(stockCode: string, market: string) {
   }
 }
 
-// ステップ2: 現在の株価を取得
+// ステップ2: 現在の株価を取得（ChatGPTに聞く）
 async function getCurrentPrice(stockCode: string, companyName: string) {
-  const prompt = `${companyName}（${stockCode}）の現在の株価を教えてください。前日比の変動率も含めて教えてください。数値のみで回答してください。例：現在株価は3,285円、前日比+2.1%`;
+  const prompt = `${companyName}（${stockCode}）について、投資分析の観点から教えてください。
+現在の株価の推定値と、最近の市場動向を簡潔に教えてください。
+注意：実際の投資判断には最新の市場データを確認してください。
+回答例：推定株価3,285円、最近は上昇傾向`;
 
-  // OpenAI APIを使用
+  // OpenAI SDKを使用
   try {
-    const openaiResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.3,
-          max_tokens: 150,
-        }),
-      }
-    );
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.5,
+      max_tokens: 200,
+    });
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
-    }
-
-    const data = await openaiResponse.json();
+    const response = completion.choices[0].message.content || "";
     // レスポンスから株価と変動率を抽出
-    const priceInfo = extractPriceFromText(data.choices[0].message.content);
+    const priceInfo = extractPriceFromText(response);
     return NextResponse.json({ ...priceInfo, step: 2 });
   } catch (error) {
     console.error("OpenAI API error:", error);
@@ -167,16 +158,25 @@ async function analyzeStock(
   market: string
 ) {
   const prompt = `
-あなたは株式投資の専門アナリストです。以下の銘柄について、個人投資家向けの詳細な分析カルテを作成してください。
+あなたは株式投資の専門アナリストです。${companyName}（${stockCode}）について、ChatGPTの知識を基に詳細な投資分析を行ってください。
+
+【重要】実際の投資判断には最新の市場データの確認が必要です。この分析は参考情報として提供されます。
 
 【分析対象】
 銘柄コード: ${stockCode}
 企業名: ${companyName}
-現在株価: ${currentPrice}円
+参考株価: ${currentPrice}円
 市場: ${market === "JP" ? "日本株" : "米国株"}
 
+【分析要求】
+1. 企業の事業内容と競争優位性を分析してください
+2. 財務健全性について一般的な業界水準と比較して評価してください
+3. 成長性と将来性について評価してください
+4. 主要なリスクと機会を特定してください
+5. 投資判断の参考となる総合評価を提供してください
+
 【分析項目と出力形式】
-以下のJSON形式で厳密に出力してください。
+以下のJSON形式で厳密に出力してください。数値は推定値で構いません。
 
 {
   "stockInfo": {
@@ -255,39 +255,29 @@ async function analyzeStock(
 }
 `;
 
-  // OpenAI APIを使用 (JSON mode)
+  // OpenAI SDKを使用 (JSON mode)
   try {
-    const openaiResponse = await fetch(
-      "https://api.openai.com/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "あなたは株式投資の専門アナリストです。JSON形式で正確に回答してください。実際の財務データが不明な場合は、業界平均や一般的な推定値を使用してください。",
         },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                "あなたは株式投資の専門アナリストです。JSON形式で正確に回答してください。",
-            },
-            { role: "user", content: prompt },
-          ],
-          temperature: 0.7,
-          response_format: { type: "json_object" },
-          max_tokens: 4000,
-        }),
-      }
-    );
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" },
+      max_tokens: 4000,
+    });
 
-    if (!openaiResponse.ok) {
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    const content = completion.choices[0].message.content;
+    if (!content) {
+      throw new Error("No content in OpenAI response");
     }
-
-    const data = await openaiResponse.json();
-    const analysisResult = JSON.parse(data.choices[0].message.content);
+    
+    const analysisResult = JSON.parse(content);
     return NextResponse.json({ ...analysisResult, step: 3 });
   } catch (error) {
     console.error("OpenAI API error:", error);
