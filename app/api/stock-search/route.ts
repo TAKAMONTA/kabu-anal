@@ -50,8 +50,8 @@ export async function POST(request: NextRequest) {
     const searchContent = searchResponse.choices[0]?.message?.content || '';
     console.log('Step 1 Response:', searchContent);
     
-    // ステップ2: 株価情報を取得
-    const priceQuery = `株式銘柄「${query}」の現在の株価、終値、前日比、出来高を教えてください。数値のみを簡潔に答えてください。`;
+    // ステップ2: 株価情報を取得（通貨を明確に含める）
+    const priceQuery = `株式銘柄「${query}」の現在の株価を通貨単位（ドルまたは円）を明記して教えてください。また終値、前日比、出来高も教えてください。`;
     
     console.log('Step 2 - Getting stock price:', priceQuery);
     
@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
         query: query,
         companyInfo: searchContent,
         priceInfo: priceInfo,
-        rawPriceContent: priceContent
+        rawPriceContent: priceContent,
+        currency: priceInfo.currency  // 通貨情報を追加
       }],
       rawContent: searchContent
     });
@@ -89,22 +90,38 @@ function extractPriceInfo(content: string) {
     previousClose: null,
     change: null,
     changePercent: null,
-    volume: null
+    volume: null,
+    currency: null  // 通貨情報を追加
   };
   
-  // 株価を抽出（例: "59.03ドル", "1,234円", "$59.03"）
+  // 通貨判別を含む株価抽出パターン（優先順位順）
   const pricePatterns = [
-    /([\d,]+\.?\d*)\s*円/,
-    /([\d,]+\.?\d*)\s*ドル/,
-    /\$([\d,]+\.?\d*)/,
-    /現在\s*[:：]?\s*([\d,]+\.?\d*)/,
-    /終値\s*[:：]?\s*([\d,]+\.?\d*)/,
+    { pattern: /\$([\d,]+\.?\d*)/, currency: 'USD' },
+    { pattern: /([\d,]+\.?\d*)\s*ドル/, currency: 'USD' },
+    { pattern: /([\d,]+\.?\d*)\s*USD/, currency: 'USD' },
+    { pattern: /([\d,]+\.?\d*)\s*円/, currency: 'JPY' },
+    { pattern: /([\d,]+\.?\d*)\s*JPY/, currency: 'JPY' },
+    { pattern: /¥([\d,]+\.?\d*)/, currency: 'JPY' },
+    { pattern: /現在の?株価\s*[:：]?\s*([\d,]+\.?\d*)\s*ドル/, currency: 'USD' },
+    { pattern: /現在の?株価\s*[:：]?\s*([\d,]+\.?\d*)\s*円/, currency: 'JPY' },
+    { pattern: /現在\s*[:：]?\s*([\d,]+\.?\d*)/, currency: null },
+    { pattern: /終値\s*[:：]?\s*([\d,]+\.?\d*)/, currency: null },
   ];
   
-  for (const pattern of pricePatterns) {
+  for (const { pattern, currency } of pricePatterns) {
     const match = content.match(pattern);
     if (match && !priceInfo.currentPrice) {
       priceInfo.currentPrice = match[1].replace(/,/g, '');
+      priceInfo.currency = currency;
+      
+      // 通貨が不明な場合、コンテキストから推測
+      if (!currency) {
+        if (content.includes('ドル') || content.includes('USD') || content.includes('$') || content.includes('米国株')) {
+          priceInfo.currency = 'USD';
+        } else if (content.includes('円') || content.includes('JPY') || content.includes('¥') || content.includes('東証')) {
+          priceInfo.currency = 'JPY';
+        }
+      }
       break;
     }
   }
@@ -147,5 +164,12 @@ function extractPriceInfo(content: string) {
   }
   
   console.log('Extracted price info:', priceInfo);
+  
+  // 通貨付きで価格を再フォーマット
+  if (priceInfo.currentPrice && priceInfo.currency) {
+    const formattedPrice = priceInfo.currentPrice;
+    priceInfo.currentPrice = priceInfo.currency === 'USD' ? 
+      `$${formattedPrice}` : `${formattedPrice}円`;
+  }
   return priceInfo;
 }

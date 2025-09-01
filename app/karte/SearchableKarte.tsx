@@ -23,6 +23,10 @@ export default function SearchableKarte() {
   const [apiNote, setApiNote] = useState('');
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [analyzingStock, setAnalyzingStock] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
   // 検索処理（Perplexity APIを使用）
   const handleSearch = async () => {
@@ -78,6 +82,44 @@ export default function SearchableKarte() {
   };
 
   // 銘柄選択処理（削除 - 使用しない）
+
+  // OpenAI分析処理
+  const analyzeStock = async (stock: any) => {
+    setIsAnalyzing(true);
+    setAnalyzingStock(stock);
+    setErrorMessage('');
+    
+    try {
+      const response = await fetch('/api/stock-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stockCode: stock.query,
+          companyInfo: stock.companyInfo,
+          priceInfo: stock.priceInfo
+        })
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          const errorData = await response.json();
+          throw new Error(`リクエスト制限に達しました。${errorData.resetIn || 60}秒後に再試行してください。`);
+        }
+        throw new Error('分析サービスに接続できませんでした');
+      }
+
+      const data = await response.json();
+      setAnalysisResult(data.analysis);
+      setShowAnalysisModal(true);
+      
+    } catch (error) {
+      console.error('Analysis error:', error);
+      setErrorMessage(error instanceof Error ? error.message : '分析中にエラーが発生しました');
+    } finally {
+      setIsAnalyzing(false);
+      setAnalyzingStock(null);
+    }
+  };
 
   // AIカルテ生成処理（3段階のAPI呼び出し）
   const generateKarte = async () => {
@@ -325,6 +367,54 @@ export default function SearchableKarte() {
                       {stock.companyInfo || stock.content}
                     </div>
                   </div>
+                  
+                  {/* 分析ボタン */}
+                  <div style={{
+                    marginTop: '15px',
+                    display: 'flex',
+                    justifyContent: 'flex-end'
+                  }}>
+                    <button
+                      onClick={() => analyzeStock(stock)}
+                      disabled={isAnalyzing && analyzingStock === stock}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: isAnalyzing && analyzingStock === stock ? '#9ca3af' : '#4f46e5',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 'bold',
+                        cursor: isAnalyzing && analyzingStock === stock ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        transition: 'all 0.2s',
+                        ':hover': {
+                          backgroundColor: '#4338ca'
+                        }
+                      }}
+                    >
+                      {isAnalyzing && analyzingStock === stock ? (
+                        <>
+                          <span style={{
+                            display: 'inline-block',
+                            width: '14px',
+                            height: '14px',
+                            border: '2px solid transparent',
+                            borderTopColor: 'white',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                          }}></span>
+                          分析中...
+                        </>
+                      ) : (
+                        <>
+                          🤖 AI分析を実行
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -381,6 +471,562 @@ export default function SearchableKarte() {
           onClose={closeKarte}
         />
       )}
+
+      {/* 分析結果モーダル */}
+      {showAnalysisModal && analysisResult && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            padding: '30px',
+            position: 'relative'
+          }}>
+            {/* クローズボタン */}
+            <button
+              onClick={() => setShowAnalysisModal(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                border: 'none',
+                backgroundColor: '#f3f4f6',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '20px'
+              }}
+            >
+              ×
+            </button>
+
+            {/* ヘッダー */}
+            <div style={{
+              marginBottom: '25px',
+              borderBottom: '2px solid #e5e7eb',
+              paddingBottom: '15px'
+            }}>
+              <h2 style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '10px'
+              }}>
+                🤖 AI投資分析レポート
+              </h2>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px',
+                marginTop: '10px'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}>
+                  <span style={{ fontSize: '14px', color: '#6b7280' }}>投資魅力度:</span>
+                  <div style={{
+                    fontSize: '28px',
+                    fontWeight: 'bold',
+                    color: analysisResult.investmentScore >= 70 ? '#16a34a' : 
+                           analysisResult.investmentScore >= 40 ? '#f59e0b' : '#dc2626'
+                  }}>
+                    {analysisResult.investmentScore}/100
+                  </div>
+                </div>
+                <div style={{
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  backgroundColor: 
+                    analysisResult.recommendation === 'BUY' ? '#dcfce7' :
+                    analysisResult.recommendation === 'HOLD' ? '#fef3c7' : '#fee2e2',
+                  color: 
+                    analysisResult.recommendation === 'BUY' ? '#166534' :
+                    analysisResult.recommendation === 'HOLD' ? '#92400e' : '#991b1b',
+                  fontWeight: 'bold',
+                  fontSize: '14px'
+                }}>
+                  {analysisResult.recommendation === 'BUY' ? '買い推奨' :
+                   analysisResult.recommendation === 'HOLD' ? '様子見' : '売り推奨'}
+                </div>
+              </div>
+            </div>
+
+            {/* サマリー */}
+            <div style={{
+              backgroundColor: '#f9fafb',
+              padding: '15px',
+              borderRadius: '8px',
+              marginBottom: '20px'
+            }}>
+              <p style={{ color: '#374151', lineHeight: '1.6' }}>
+                {analysisResult.summary}
+              </p>
+            </div>
+
+            {/* 推奨理由 */}
+            {analysisResult.recommendationReason && (
+              <div style={{
+                backgroundColor: '#eff6ff',
+                padding: '15px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                borderLeft: '4px solid #3b82f6'
+              }}>
+                <h4 style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px' }}>
+                  🎯 投資判断の根拠
+                </h4>
+                <p style={{ color: '#374151', lineHeight: '1.6' }}>
+                  {analysisResult.recommendationReason}
+                </p>
+              </div>
+            )}
+
+            {/* 業界分析 */}
+            {analysisResult.industryAnalysis && (
+              <div style={{ marginBottom: '25px' }}>
+                <h3 style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  marginBottom: '15px'
+                }}>
+                  🏭 業界分析
+                </h3>
+                <div style={{
+                  backgroundColor: '#f9fafb',
+                  padding: '15px',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <strong style={{ color: '#374151' }}>市場ポジション:</strong>
+                    <div style={{ marginTop: '4px', color: '#4b5563' }}>
+                      {analysisResult.industryAnalysis.marketPosition}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <strong style={{ color: '#374151' }}>競合優位性:</strong>
+                    <div style={{ marginTop: '4px', color: '#4b5563' }}>
+                      {analysisResult.industryAnalysis.competitiveAdvantage}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <strong style={{ color: '#374151' }}>業界トレンド:</strong>
+                    <div style={{ marginTop: '4px', color: '#4b5563' }}>
+                      {analysisResult.industryAnalysis.industryTrend}
+                    </div>
+                  </div>
+                  {analysisResult.industryAnalysis.majorCompetitors && (
+                    <div>
+                      <strong style={{ color: '#374151' }}>主要競合:</strong>
+                      <div style={{ marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        {analysisResult.industryAnalysis.majorCompetitors.map((comp: string, idx: number) => (
+                          <span key={idx} style={{
+                            padding: '4px 12px',
+                            backgroundColor: '#e5e7eb',
+                            borderRadius: '12px',
+                            fontSize: '13px',
+                            color: '#374151'
+                          }}>
+                            {comp}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* SWOT分析 */}
+            <div style={{ marginBottom: '25px' }}>
+              <h3 style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#111827',
+                marginBottom: '15px'
+              }}>
+                📊 SWOT分析
+              </h3>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '15px'
+              }}>
+                <div style={{
+                  backgroundColor: '#eff6ff',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  borderLeft: '4px solid #3b82f6'
+                }}>
+                  <h4 style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '8px' }}>強み</h4>
+                  <ul style={{ listStyle: 'disc', paddingLeft: '20px', color: '#374151' }}>
+                    {analysisResult.analysis?.strengths?.map((item: string, index: number) => (
+                      <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div style={{
+                  backgroundColor: '#fef2f2',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  borderLeft: '4px solid #ef4444'
+                }}>
+                  <h4 style={{ fontWeight: 'bold', color: '#991b1b', marginBottom: '8px' }}>弱み</h4>
+                  <ul style={{ listStyle: 'disc', paddingLeft: '20px', color: '#374151' }}>
+                    {analysisResult.analysis?.weaknesses?.map((item: string, index: number) => (
+                      <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div style={{
+                  backgroundColor: '#f0fdf4',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  borderLeft: '4px solid #22c55e'
+                }}>
+                  <h4 style={{ fontWeight: 'bold', color: '#166534', marginBottom: '8px' }}>機会</h4>
+                  <ul style={{ listStyle: 'disc', paddingLeft: '20px', color: '#374151' }}>
+                    {analysisResult.analysis?.opportunities?.map((item: string, index: number) => (
+                      <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div style={{
+                  backgroundColor: '#fffbeb',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  borderLeft: '4px solid #f59e0b'
+                }}>
+                  <h4 style={{ fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>脅威</h4>
+                  <ul style={{ listStyle: 'disc', paddingLeft: '20px', color: '#374151' }}>
+                    {analysisResult.analysis?.threats?.map((item: string, index: number) => (
+                      <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* テクニカル＆ファンダメンタル分析 */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '20px',
+              marginBottom: '25px'
+            }}>
+              {/* テクニカル分析 */}
+              <div>
+                <h3 style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  marginBottom: '10px'
+                }}>
+                  📈 テクニカル分析
+                </h3>
+                <div style={{
+                  backgroundColor: '#f9fafb',
+                  padding: '15px',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: '#6b7280', fontSize: '12px' }}>トレンド:</span>
+                    <div style={{ fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.technicalAnalysis?.trend}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: '#6b7280', fontSize: '12px' }}>サポート:</span>
+                    <div style={{ fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.technicalAnalysis?.support}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: '#6b7280', fontSize: '12px' }}>レジスタンス:</span>
+                    <div style={{ fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.technicalAnalysis?.resistance}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#6b7280', fontSize: '12px' }}>モメンタム:</span>
+                    <div style={{ fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.technicalAnalysis?.momentum}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ファンダメンタル分析 */}
+              <div>
+                <h3 style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  marginBottom: '10px'
+                }}>
+                  💰 ファンダメンタル分析
+                </h3>
+                <div style={{
+                  backgroundColor: '#f9fafb',
+                  padding: '15px',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: '#6b7280', fontSize: '12px' }}>バリュエーション:</span>
+                    <div style={{ fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.fundamentalAnalysis?.valuation}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: '#6b7280', fontSize: '12px' }}>成長性:</span>
+                    <div style={{ fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.fundamentalAnalysis?.growthPotential}
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ color: '#6b7280', fontSize: '12px' }}>収益性:</span>
+                    <div style={{ fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.fundamentalAnalysis?.profitability}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#6b7280', fontSize: '12px' }}>財務健全性:</span>
+                    <div style={{ fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.fundamentalAnalysis?.financialHealth}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 目標株価 */}
+            {analysisResult.targetPrice && (
+              <div style={{ marginBottom: '25px' }}>
+                <h3 style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  marginBottom: '10px'
+                }}>
+                  🎯 目標株価
+                </h3>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '15px',
+                  marginBottom: '15px'
+                }}>
+                  {analysisResult.targetPrice.threeMonths && (
+                    <div style={{
+                      backgroundColor: '#f9fafb',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '5px' }}>3ヶ月後</div>
+                      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>
+                        {analysisResult.targetPrice.threeMonths}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{
+                    backgroundColor: '#f9fafb',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '5px' }}>6ヶ月後</div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.targetPrice.sixMonths}
+                    </div>
+                  </div>
+                  <div style={{
+                    backgroundColor: '#f9fafb',
+                    padding: '15px',
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }}>
+                    <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '5px' }}>1年後</div>
+                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>
+                      {analysisResult.targetPrice.oneYear}
+                    </div>
+                  </div>
+                  {analysisResult.targetPrice.threeYears && (
+                    <div style={{
+                      backgroundColor: '#f9fafb',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      textAlign: 'center'
+                    }}>
+                      <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '5px' }}>3年後</div>
+                      <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>
+                        {analysisResult.targetPrice.threeYears}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div style={{
+                  backgroundColor: '#dcfce7',
+                  padding: '15px',
+                  borderRadius: '8px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ color: '#6b7280', fontSize: '12px', marginBottom: '5px' }}>上昇余地</div>
+                  <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#16a34a' }}>
+                    {analysisResult.targetPrice.upside}
+                  </div>
+                </div>
+                {analysisResult.targetPrice.methodology && (
+                  <div style={{ marginTop: '10px', fontSize: '13px', color: '#6b7280' }}>
+                    <strong>算出根拠:</strong> {analysisResult.targetPrice.methodology}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* カタリスト */}
+            {analysisResult.catalysts && (
+              <div style={{ marginBottom: '25px' }}>
+                <h3 style={{
+                  fontSize: '16px',
+                  fontWeight: 'bold',
+                  color: '#111827',
+                  marginBottom: '10px'
+                }}>
+                  ⚡ 株価変動の触媒
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '15px' }}>
+                  {analysisResult.catalysts.positive && (
+                    <div style={{
+                      backgroundColor: '#f0fdf4',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      borderLeft: '4px solid #22c55e'
+                    }}>
+                      <h4 style={{ fontWeight: 'bold', color: '#166534', marginBottom: '8px' }}>ポジティブ要因</h4>
+                      <ul style={{ listStyle: 'disc', paddingLeft: '20px', color: '#374151' }}>
+                        {analysisResult.catalysts.positive.map((item: string, index: number) => (
+                          <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {analysisResult.catalysts.negative && (
+                    <div style={{
+                      backgroundColor: '#fef2f2',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      borderLeft: '4px solid #ef4444'
+                    }}>
+                      <h4 style={{ fontWeight: 'bold', color: '#991b1b', marginBottom: '8px' }}>ネガティブ要因</h4>
+                      <ul style={{ listStyle: 'disc', paddingLeft: '20px', color: '#374151' }}>
+                        {analysisResult.catalysts.negative.map((item: string, index: number) => (
+                          <li key={index} style={{ marginBottom: '4px' }}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 投資アクション */}
+            {analysisResult.actionItems && (
+              <div style={{
+                backgroundColor: '#fef3c7',
+                padding: '15px',
+                borderRadius: '8px',
+                marginBottom: '20px',
+                borderLeft: '4px solid #f59e0b'
+              }}>
+                <h4 style={{ fontWeight: 'bold', color: '#92400e', marginBottom: '12px' }}>
+                  📋 具体的な投資アクション
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                  {analysisResult.actionItems.buyEntry && (
+                    <div>
+                      <strong style={{ color: '#92400e', fontSize: '13px' }}>買いエントリー:</strong>
+                      <div style={{ fontSize: '13px', color: '#374151', marginTop: '2px' }}>
+                        {analysisResult.actionItems.buyEntry}
+                      </div>
+                    </div>
+                  )}
+                  {analysisResult.actionItems.sellExit && (
+                    <div>
+                      <strong style={{ color: '#92400e', fontSize: '13px' }}>売りエグジット:</strong>
+                      <div style={{ fontSize: '13px', color: '#374151', marginTop: '2px' }}>
+                        {analysisResult.actionItems.sellExit}
+                      </div>
+                    </div>
+                  )}
+                  {analysisResult.actionItems.stopLoss && (
+                    <div>
+                      <strong style={{ color: '#92400e', fontSize: '13px' }}>損切りライン:</strong>
+                      <div style={{ fontSize: '13px', color: '#374151', marginTop: '2px' }}>
+                        {analysisResult.actionItems.stopLoss}
+                      </div>
+                    </div>
+                  )}
+                  {analysisResult.actionItems.positionSize && (
+                    <div>
+                      <strong style={{ color: '#92400e', fontSize: '13px' }}>推奨ポジション:</strong>
+                      <div style={{ fontSize: '13px', color: '#374151', marginTop: '2px' }}>
+                        {analysisResult.actionItems.positionSize}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* アナリストノート */}
+            {analysisResult.analystNote && (
+              <div style={{
+                backgroundColor: '#fef3c7',
+                padding: '15px',
+                borderRadius: '8px',
+                borderLeft: '4px solid #f59e0b'
+              }}>
+                <h4 style={{ fontWeight: 'bold', color: '#92400e', marginBottom: '8px' }}>
+                  📝 アナリストノート
+                </h4>
+                <p style={{ color: '#374151', lineHeight: '1.6' }}>
+                  {analysisResult.analystNote}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* スピナーアニメーション用のスタイル */}
+      <style jsx>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </>
   );
 }
