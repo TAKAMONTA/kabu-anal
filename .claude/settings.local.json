@@ -12,7 +12,10 @@
       "Read(C:\\Users\\tnaka\\OneDrive\\Pictures\\Screenshots/**)",
       "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)",
       "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)",
-      "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)"
+      "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)",
+      "Bash(cmd /c:*)",
+      "Bash(timeout 5 curl http://localhost:3005/karte)",
+      "Bash(npm uninstall:*)"
     ],
     "deny": [],
     "ask": []
