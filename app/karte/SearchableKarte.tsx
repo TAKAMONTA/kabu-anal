@@ -59,11 +59,12 @@ export default function SearchableKarte() {
       if (data.results && data.results.length > 0) {
         // Perplexityの結果を表示
         setSearchResults(data.results.map((result: any) => ({
-          code: result.query,
-          name: result.query,
-          content: result.content
+          query: result.query,
+          companyInfo: result.companyInfo,
+          priceInfo: result.priceInfo,
+          content: result.companyInfo || result.content
         })));
-        setApiNote('🔍 Perplexity AIで検索しました');
+        setApiNote('🔍 Perplexity AIで検索し、株価情報を取得しました');
         setTimeout(() => setApiNote(''), 5000);
       } else {
         setErrorMessage('検索結果がありませんでした');
@@ -230,23 +231,99 @@ export default function SearchableKarte() {
                   key={index} 
                   className="result-item"
                   style={{
-                    padding: '15px',
-                    backgroundColor: '#f9f9f9',
-                    borderRadius: '8px',
-                    marginBottom: '10px',
-                    cursor: 'default'
+                    padding: '20px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    marginBottom: '15px',
+                    cursor: 'default',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                   }}
                 >
-                  <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>
-                    🔍 {stock.code}
-                  </div>
+                  {/* 銘柄名 */}
                   <div style={{ 
-                    whiteSpace: 'pre-wrap',
-                    fontSize: '14px',
-                    lineHeight: '1.6',
-                    color: '#333'
+                    fontWeight: 'bold', 
+                    fontSize: '18px',
+                    marginBottom: '15px',
+                    color: '#111827'
                   }}>
-                    {stock.content}
+                    🔍 {stock.query}
+                  </div>
+                  
+                  {/* 株価情報 */}
+                  {stock.priceInfo && (
+                    <div style={{
+                      backgroundColor: '#f3f4f6',
+                      padding: '15px',
+                      borderRadius: '8px',
+                      marginBottom: '15px'
+                    }}>
+                      <h4 style={{ 
+                        fontSize: '16px', 
+                        fontWeight: 'bold',
+                        marginBottom: '10px',
+                        color: '#374151'
+                      }}>
+                        📊 株価情報
+                      </h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                        {stock.priceInfo.currentPrice && (
+                          <div>
+                            <span style={{ color: '#6b7280', fontSize: '12px' }}>現在価格</span>
+                            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827' }}>
+                              {stock.priceInfo.currentPrice}
+                            </div>
+                          </div>
+                        )}
+                        {stock.priceInfo.change && (
+                          <div>
+                            <span style={{ color: '#6b7280', fontSize: '12px' }}>前日比</span>
+                            <div style={{ 
+                              fontSize: '16px', 
+                              fontWeight: 'bold',
+                              color: stock.priceInfo.change.startsWith('-') ? '#dc2626' : '#16a34a'
+                            }}>
+                              {stock.priceInfo.change}
+                              {stock.priceInfo.changePercent && ` (${stock.priceInfo.changePercent}%)`}
+                            </div>
+                          </div>
+                        )}
+                        {stock.priceInfo.volume && (
+                          <div style={{ gridColumn: 'span 2' }}>
+                            <span style={{ color: '#6b7280', fontSize: '12px' }}>出来高</span>
+                            <div style={{ fontSize: '14px', color: '#374151' }}>
+                              {stock.priceInfo.volume}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 企業情報 */}
+                  <div style={{
+                    backgroundColor: '#f9fafb',
+                    padding: '15px',
+                    borderRadius: '8px'
+                  }}>
+                    <h4 style={{ 
+                      fontSize: '14px', 
+                      fontWeight: 'bold',
+                      marginBottom: '10px',
+                      color: '#374151'
+                    }}>
+                      🏢 企業情報
+                    </h4>
+                    <div style={{ 
+                      whiteSpace: 'pre-wrap',
+                      fontSize: '13px',
+                      lineHeight: '1.6',
+                      color: '#4b5563',
+                      maxHeight: '200px',
+                      overflow: 'auto'
+                    }}>
+                      {stock.companyInfo || stock.content}
+                    </div>
                   </div>
                 </div>
               ))}
