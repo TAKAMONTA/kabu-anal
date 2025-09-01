@@ -63,7 +63,7 @@ class PerplexityClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar-pro', // Perplexity API モデル
+        model: 'sonar', // Perplexity API モデル
         messages,
       }),
     });
