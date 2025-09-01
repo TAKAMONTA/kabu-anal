@@ -63,14 +63,11 @@ class PerplexityClient {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'sonar-small-online', // Perplexity公式のモデル名
+        model: 'llama-3.1-sonar-small-128k-online', // 正しいPerplexityモデル名
         messages,
         max_tokens: 1000,
         temperature: 0.2,
         top_p: 0.9,
-        return_citations: options?.return_citations !== false,
-        return_images: options?.return_images || false,
-        return_related_questions: options?.return_related_questions || false,
       }),
     });
 
