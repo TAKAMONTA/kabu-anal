@@ -93,19 +93,10 @@ async function identifyCompany(stockCode: string, market: string) {
     return NextResponse.json({ companyName, step: 1 });
   } catch (error) {
     console.error("OpenAI API error:", error);
-
-    // エラー時はモックデータを使用
-    const mockCompanies: Record<string, string> = {
-      "7203": "トヨタ自動車株式会社",
-      "6758": "ソニーグループ株式会社",
-      AAPL: "Apple Inc.",
-      MSFT: "Microsoft Corporation",
-    };
-
-    return NextResponse.json({
-      companyName: mockCompanies[stockCode] || "不明な企業",
-      step: 1,
-    });
+    return NextResponse.json(
+      { error: "AI分析サービスに接続できませんでした" },
+      { status: 500 }
+    );
   }
 }
 
@@ -131,22 +122,10 @@ async function getCurrentPrice(stockCode: string, companyName: string) {
     return NextResponse.json({ ...priceInfo, step: 2 });
   } catch (error) {
     console.error("OpenAI API error:", error);
-
-    // エラー時はモックデータを使用
-    const mockPrices: Record<
-      string,
-      { currentPrice: number; changePercent: number }
-    > = {
-      "7203": { currentPrice: 3285, changePercent: 2.1 },
-      "6758": { currentPrice: 12950, changePercent: 3.8 },
-      AAPL: { currentPrice: 27000, changePercent: -1.2 },
-      MSFT: { currentPrice: 56000, changePercent: 0.8 },
-    };
-
-    return NextResponse.json({
-      ...(mockPrices[stockCode] || { currentPrice: 0, changePercent: 0 }),
-      step: 2,
-    });
+    return NextResponse.json(
+      { error: "株価情報の取得に失敗しました" },
+      { status: 500 }
+    );
   }
 }
 
@@ -281,22 +260,10 @@ async function analyzeStock(
     return NextResponse.json({ ...analysisResult, step: 3 });
   } catch (error) {
     console.error("OpenAI API error:", error);
-
-    // エラー時はモックデータを使用
-    const { mockToyotaData, mockAppleData, mockSonyData } = await import(
-      "@/app/components/MockKarteData"
+    return NextResponse.json(
+      { error: "AI分析の実行に失敗しました" },
+      { status: 500 }
     );
-    const mockDataList = [mockToyotaData, mockAppleData, mockSonyData];
-    const randomData =
-      mockDataList[Math.floor(Math.random() * mockDataList.length)];
-
-    // 入力された企業情報で上書き
-    randomData.stockInfo.code = stockCode;
-    randomData.stockInfo.name = companyName;
-    randomData.stockInfo.price = currentPrice;
-    randomData.stockInfo.market = market;
-
-    return NextResponse.json({ ...randomData, step: 3 });
   }
 }
 
@@ -315,37 +282,3 @@ function extractPriceFromText(text: string): {
   };
 }
 
-// オプション: リアルタイムデータ取得用の補助関数
-async function fetchRealTimeStockData(stockCode: string, market: string) {
-  // Yahoo Finance API, Alpha Vantage API などから
-  // リアルタイムの株価データを取得
-
-  // 例: Yahoo Finance API
-  /*
-  const response = await fetch(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${stockCode}`,
-    {
-      headers: {
-        'User-Agent': 'Mozilla/5.0'
-      }
-    }
-  );
-  
-  const data = await response.json();
-  return {
-    price: data.chart.result[0].meta.regularMarketPrice,
-    previousClose: data.chart.result[0].meta.previousClose,
-    volume: data.chart.result[0].meta.regularMarketVolume
-  };
-  */
-
-  return null;
-}
-
-// 財務データ取得用の補助関数
-async function fetchFinancialData(stockCode: string, market: string) {
-  // 財務データAPIから詳細な財務情報を取得
-  // 例: EDGAR API (米国株), EDINET API (日本株)
-
-  return null;
-}

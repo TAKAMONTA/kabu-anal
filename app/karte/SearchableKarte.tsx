@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import AIKarteDisplay from '../components/AIKarteDisplay';
-import { mockToyotaData, mockAppleData, mockSonyData } from '../components/MockKarteData';
 
 // 銘柄データの型定義
 interface Stock {
@@ -11,18 +10,14 @@ interface Stock {
   market?: string;
 }
 
-// サンプル銘柄データ
+// 人気銘柄データ（検索補助用）
 const japanStocks: Stock[] = [
   { code: '7203', name: 'トヨタ自動車', market: 'JP' },
   { code: '6758', name: 'ソニーグループ', market: 'JP' },
   { code: '9432', name: '日本電信電話', market: 'JP' },
   { code: '6861', name: 'キーエンス', market: 'JP' },
-  { code: '4063', name: '信越化学工業', market: 'JP' },
   { code: '9983', name: 'ファーストリテイリング', market: 'JP' },
   { code: '8306', name: '三菱UFJフィナンシャル・グループ', market: 'JP' },
-  { code: '9984', name: 'ソフトバンクグループ', market: 'JP' },
-  { code: '7267', name: 'ホンダ', market: 'JP' },
-  { code: '6902', name: 'デンソー', market: 'JP' },
 ];
 
 const usStocks: Stock[] = [
@@ -32,10 +27,6 @@ const usStocks: Stock[] = [
   { code: 'AMZN', name: 'Amazon', market: 'US' },
   { code: 'NVDA', name: 'NVIDIA', market: 'US' },
   { code: 'TSLA', name: 'Tesla', market: 'US' },
-  { code: 'META', name: 'Meta Platforms', market: 'US' },
-  { code: 'BRK.B', name: 'Berkshire Hathaway', market: 'US' },
-  { code: 'JPM', name: 'JPMorgan Chase', market: 'US' },
-  { code: 'V', name: 'Visa', market: 'US' },
 ];
 
 const allStocks = [...japanStocks, ...usStocks];
@@ -169,43 +160,12 @@ export default function SearchableKarte() {
       
     } catch (error) {
       console.error('カルテ生成エラー:', error);
-      setErrorMessage('AIカルテの生成に失敗しました。もう一度お試しください。');
-      
-      // エラー時はモックデータを使用
-      const mockData = getMockData();
-      if (mockData) {
-        setAnalysisData(mockData);
-        setShowKarte(true);
-      }
+      const errorMsg = error instanceof Error ? error.message : 'AIカルテの生成に失敗しました';
+      setErrorMessage(errorMsg + '。もう一度お試しください。');
     } finally {
       setIsGenerating(false);
       setGenerationStep('');
       setApiNote('');
-    }
-  };
-
-  // モックデータを取得する関数（フォールバック用）
-  const getMockData = () => {
-    if (!selectedStock) return null;
-    
-    switch (selectedStock.code) {
-      case '7203':
-        return mockToyotaData;
-      case 'AAPL':
-        return mockAppleData;
-      case '6758':
-        return mockSonyData;
-      default:
-        // デフォルトとしてトヨタのデータを使用し、銘柄情報を上書き
-        return {
-          ...mockToyotaData,
-          stockInfo: {
-            ...mockToyotaData.stockInfo,
-            code: selectedStock.code,
-            name: selectedStock.name,
-            market: selectedStock.market || 'JP'
-          }
-        };
     }
   };
 
