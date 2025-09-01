@@ -43,31 +43,85 @@ export default function SearchableKarte() {
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 検索処理
-  const handleSearch = () => {
+  // 検索処理（Perplexity APIを使用）
+  const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      alert('銘柄コードまたは企業名を入力してください');
+      setErrorMessage('銘柄コードまたは企業名を入力してください');
       return;
     }
 
     setIsSearching(true);
     setErrorMessage('');
+    setSearchResults([]);
+    setApiNote('');
     
-    // 検索シミュレーション（実際にはAPIを呼ぶ）
-    setTimeout(() => {
+    try {
+      // Perplexity APIで検索
+      const response = await fetch('/api/stock-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: searchQuery,
+          searchType: 'stock'
+        })
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          const errorData = await response.json();
+          throw new Error(`リクエスト制限に達しました。${errorData.resetIn || 60}秒後に再試行してください。`);
+        }
+        throw new Error('検索サービスに接続できませんでした');
+      }
+
+      const data = await response.json();
+      
+      if (data.results && data.results.length > 0) {
+        setSearchResults(data.results);
+        
+        // API使用状況の通知
+        if (data.searchType === 'fallback') {
+          setApiNote('📋 ローカルデータベースから検索しました');
+        } else {
+          setApiNote('🔍 Perplexity AIで最新の株式情報を検索しました');
+        }
+        setTimeout(() => setApiNote(''), 5000);
+      } else {
+        // フォールバック検索
+        const query = searchQuery.toLowerCase();
+        const localResults = allStocks.filter(stock => 
+          stock.code.toLowerCase().includes(query) ||
+          stock.name.toLowerCase().includes(query)
+        );
+        
+        if (localResults.length > 0) {
+          setSearchResults(localResults);
+          setApiNote('📋 ローカルデータベースから検索しました');
+          setTimeout(() => setApiNote(''), 5000);
+        } else {
+          setErrorMessage('該当する銘柄が見つかりませんでした。銘柄コードまたは企業名を確認してください。');
+        }
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      
+      // エラー時はローカル検索にフォールバック
       const query = searchQuery.toLowerCase();
-      const results = allStocks.filter(stock => 
+      const localResults = allStocks.filter(stock => 
         stock.code.toLowerCase().includes(query) ||
         stock.name.toLowerCase().includes(query)
       );
       
-      setSearchResults(results);
-      setIsSearching(false);
-      
-      if (results.length === 0) {
-        alert('該当する銘柄が見つかりませんでした');
+      if (localResults.length > 0) {
+        setSearchResults(localResults);
+        setApiNote('📋 ローカルデータベースから検索しました（Perplexity API利用不可）');
+        setTimeout(() => setApiNote(''), 5000);
+      } else {
+        setErrorMessage(error instanceof Error ? error.message : '検索中にエラーが発生しました。しばらくしてから再試行してください。');
       }
-    }, 500);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   // 銘柄選択処理
@@ -205,13 +259,18 @@ export default function SearchableKarte() {
         {errorMessage && (
           <div className="error-message" style={{
             marginTop: '10px',
-            padding: '10px',
-            backgroundColor: '#fee',
-            color: '#c00',
-            borderRadius: '5px',
-            fontSize: '14px'
+            padding: '12px',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #fecaca',
+            color: '#dc2626',
+            borderRadius: '8px',
+            fontSize: '14px',
+            display: 'flex',
+            alignItems: 'start',
+            gap: '8px'
           }}>
-            ⚠️ {errorMessage}
+            <span style={{ fontSize: '16px', marginTop: '2px' }}>⚠️</span>
+            <span>{errorMessage}</span>
           </div>
         )}
 
@@ -259,15 +318,17 @@ export default function SearchableKarte() {
             {apiNote && (
               <div style={{
                 marginTop: '10px',
-                padding: '10px',
-                backgroundColor: '#e3f2fd',
+                padding: '12px',
+                backgroundColor: '#eff6ff',
+                border: '1px solid #bfdbfe',
                 borderRadius: '8px',
                 fontSize: '14px',
-                color: '#1976d2',
+                color: '#1e40af',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                gap: '8px',
+                animation: 'fadeIn 0.3s ease-in'
               }}>
-                <span style={{ marginRight: '8px' }}>ℹ️</span>
                 {apiNote}
               </div>
             )}
