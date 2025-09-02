@@ -15,7 +15,10 @@
       "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)",
       "Bash(cmd /c:*)",
       "Bash(timeout 5 curl http://localhost:3005/karte)",
-      "Bash(npm uninstall:*)"
+      "Bash(npm uninstall:*)",
+      "Bash(powershell:*)",
+      "Bash(npm start)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

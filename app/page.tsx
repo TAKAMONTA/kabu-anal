@@ -10,8 +10,9 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
+    // 認証がない場合はランディングページへリダイレクト
     if (!loading && !user) {
-      router.push('/login');
+      router.push('/landing');
     }
   }, [user, loading, router]);
 

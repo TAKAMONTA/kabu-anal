@@ -40,8 +40,19 @@ export async function POST(request: NextRequest) {
 
     const perplexity = getPerplexityClient();
     
-    // ステップ1: 銘柄情報を検索
-    const searchQuery = `株式銘柄「${query}」について、企業名と証券コードまたはティッカーシンボルを教えてください`;
+    // クエリが証券コードかティッカーシンボルかを判定
+    const isJapaneseCode = /^\d{4}$/.test(query);
+    const isUSSymbol = /^[A-Z]{1,5}$/.test(query);
+    
+    // ステップ1: 銘柄情報を検索（コード/シンボルの種類に応じて検索方法を変更）
+    let searchQuery: string;
+    if (isJapaneseCode) {
+      searchQuery = `日本株の証券コード ${query} の企業名と最新の株価情報を教えてください`;
+    } else if (isUSSymbol) {
+      searchQuery = `米国株のティッカーシンボル ${query} の企業名と最新の株価情報を教えてください`;
+    } else {
+      searchQuery = `株式銘柄「${query}」について、企業名と証券コードまたはティッカーシンボルを教えてください`;
+    }
 
     console.log('Step 1 - Searching with Perplexity:', searchQuery);
 
@@ -51,7 +62,14 @@ export async function POST(request: NextRequest) {
     console.log('Step 1 Response:', searchContent);
     
     // ステップ2: 株価情報を取得（通貨を明確に含める）
-    const priceQuery = `株式銘柄「${query}」の現在の株価を通貨単位（ドルまたは円）を明記して教えてください。また終値、前日比、出来高も教えてください。`;
+    let priceQuery: string;
+    if (isJapaneseCode) {
+      priceQuery = `日本株 証券コード ${query} の現在の株価（円）、前日比、出来高を教えてください`;
+    } else if (isUSSymbol) {
+      priceQuery = `米国株 ティッカーシンボル ${query} の現在の株価（ドル）、前日比、出来高を教えてください`;
+    } else {
+      priceQuery = `株式銘柄「${query}」の現在の株価を通貨単位（ドルまたは円）を明記して教えてください。また終値、前日比、出来高も教えてください。`;
+    }
     
     console.log('Step 2 - Getting stock price:', priceQuery);
     
@@ -64,6 +82,7 @@ export async function POST(request: NextRequest) {
     
     // 結果を統合して返す
     return NextResponse.json({
+      success: true,
       results: [{
         query: query,
         companyInfo: searchContent,
@@ -77,7 +96,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Stock search error:', error);
     return NextResponse.json(
-      { error: "検索に失敗しました" },
+      { 
+        success: false,
+        error: "検索に失敗しました" 
+      },
       { status: 500 }
     );
   }
