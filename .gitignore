@@ -47,3 +47,17 @@ ui-debug.log
 Thumbs.db
 *.swp
 *.swo
+
+# 環境変数
+.env
+.env.local
+.env.production
+.env.development
+.env*.backup
+*.backup
+
+# バックアップファイル
+*~
+*.bak
+*.swp
+*.swo
