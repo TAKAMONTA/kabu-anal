@@ -18,7 +18,9 @@
       "Bash(npm uninstall:*)",
       "Bash(powershell:*)",
       "Bash(npm start)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm i:*)",
+      "Read(C:\\Users\\tnaka\\OneDrive\\Pictures\\Screenshots/**)"
     ],
     "deny": [],
     "ask": []
