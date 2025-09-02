@@ -16,9 +16,14 @@ export default function SignUpForm({ onSuccess, onLoginClick }: SignUpFormProps)
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [validationError, setValidationError] = useState('');
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const { signUpWithEmail, signInWithGoogle, error, clearError } = useAuth();
 
   const validateForm = () => {
+    if (!agreeToTerms) {
+      setValidationError('利用規約とプライバシーポリシーへの同意が必要です');
+      return false;
+    }
     if (password !== confirmPassword) {
       setValidationError('パスワードが一致しません');
       return false;
@@ -51,6 +56,10 @@ export default function SignUpForm({ onSuccess, onLoginClick }: SignUpFormProps)
   };
 
   const handleGoogleSignUp = async () => {
+    if (!agreeToTerms) {
+      setValidationError('利用規約とプライバシーポリシーへの同意が必要です');
+      return;
+    }
     setIsLoading(true);
     try {
       await signInWithGoogle();
@@ -164,6 +173,32 @@ export default function SignUpForm({ onSuccess, onLoginClick }: SignUpFormProps)
               required
               disabled={isLoading}
             />
+          </div>
+
+          <div className="mt-4">
+            <div className="flex items-start">
+              <input
+                type="checkbox"
+                id="agreeToTerms"
+                checked={agreeToTerms}
+                onChange={(e) => {
+                  setAgreeToTerms(e.target.checked);
+                  setValidationError('');
+                }}
+                className="mt-1 mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                disabled={isLoading}
+              />
+              <label htmlFor="agreeToTerms" className="text-sm text-gray-700">
+                <a href="/terms" target="_blank" className="text-blue-600 hover:text-blue-700 underline">
+                  利用規約
+                </a>
+                および
+                <a href="/privacy" target="_blank" className="text-blue-600 hover:text-blue-700 underline">
+                  プライバシーポリシー
+                </a>
+                に同意する
+              </label>
+            </div>
           </div>
 
           <button

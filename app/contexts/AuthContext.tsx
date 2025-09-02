@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   // ユーザー情報をFirestoreに保存
-  const saveUserToFirestore = async (user: User) => {
+  const saveUserToFirestore = async (user: User, isNewUser: boolean = false) => {
     try {
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
@@ -57,6 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           createdAt: serverTimestamp(),
           lastLoginAt: serverTimestamp(),
           subscription: 'free',
+          agreedToTerms: isNewUser, // 新規登録時は同意済み
+          agreedToTermsAt: isNewUser ? serverTimestamp() : null,
         });
       } else {
         await setDoc(userDocRef, {
@@ -74,7 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      await saveUserToFirestore(result.user);
+      // 新規ユーザーかどうかを判定
+      const isNewUser = (result as any)._tokenResponse?.isNewUser || false;
+      await saveUserToFirestore(result.user, isNewUser);
     } catch (err: any) {
       setError(err.message || 'Googleサインインに失敗しました');
       throw err;
@@ -110,7 +114,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await updateProfile(result.user, { displayName });
       }
       
-      await saveUserToFirestore(result.user);
+      // 新規登録は常に同意済みとして保存
+      await saveUserToFirestore(result.user, true);
     } catch (err: any) {
       if (err.code === 'auth/email-already-in-use') {
         setError('このメールアドレスは既に使用されています');
