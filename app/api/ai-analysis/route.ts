@@ -75,6 +75,15 @@ export async function POST(request: NextRequest) {
 
 // Step 1: Company identification
 async function identifyCompany(stockCode: string, market: string) {
+  // Check if OpenAI API key is available
+  if (!process.env.OPENAI_API_KEY) {
+    console.error("OpenAI API key is not configured");
+    return NextResponse.json(
+      { error: "AI service configuration error" },
+      { status: 500 }
+    );
+  }
+
   const prompt =
     market === "JP"
       ? `日本株コード${stockCode}の会社は何ですか？会社名のみを回答してください。`

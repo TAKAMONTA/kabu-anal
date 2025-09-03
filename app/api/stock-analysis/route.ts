@@ -5,6 +5,15 @@ import { checkRateLimit } from "@/app/lib/rateLimiter";
 // OpenAIを使用した株価分析
 export async function POST(request: NextRequest) {
   try {
+    // Check if OpenAI API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("OpenAI API key is not configured");
+      return NextResponse.json(
+        { error: "AI service configuration error" },
+        { status: 500 }
+      );
+    }
+
     // レート制限チェック
     const clientId = request.headers.get("x-forwarded-for") || "anonymous";
     const rateLimit = checkRateLimit(clientId);
