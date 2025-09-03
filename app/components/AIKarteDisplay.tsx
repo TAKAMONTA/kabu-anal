@@ -1,6 +1,6 @@
-'use client';
+﻿"use client";
 
-import React from 'react';
+import React from "react";
 
 // AI分析データの型定義
 interface AIAnalysisData {
@@ -31,22 +31,24 @@ interface AIAnalysisData {
     eps: number;
     bps: number;
     marketCap: number;
+    revenueGrowth: number; // 追加
   };
   aiScores: {
-    investmentScore: number;
-    growthPrediction: number;
-    riskAssessment: number;
+    totalScore: number; // 追加
+    growthPotential: number; // 追加
+    profitability: number; // 追加
+    stability: number; // 追加
+    value: number; // 追加
     aiConfidence: number;
   };
   financialHealth: {
-    profitability: number;
-    stability: number;
-    growth: number;
-    efficiency: number;
-    liquidity: number;
+    debtToEquity: number; // 追加
+    currentRatio: number; // 追加
+    cashFlow: number; // 追加
+    interestCoverage: number; // 追加
   };
   marketSentiment: {
-    sentiment: 'bullish' | 'neutral' | 'bearish';
+    sentiment: "bullish" | "neutral" | "bearish";
     newsScore: number;
     analystRating: number;
     socialMention: number;
@@ -58,7 +60,7 @@ interface AIAnalysisData {
     change: number;
   }>;
   technicalIndicators: {
-    trend: 'uptrend' | 'sideways' | 'downtrend';
+    trend: "uptrend" | "sideways" | "downtrend";
     rsi: number;
     sma20: number;
     sma50: number;
@@ -83,15 +85,19 @@ interface Props {
 }
 
 // スコアメーターコンポーネント
-const ScoreMeter: React.FC<{ score: number; label: string; color?: string }> = ({ score, label, color = '#4CAF50' }) => {
+const ScoreMeter: React.FC<{
+  score: number;
+  label: string;
+  color?: string;
+}> = ({ score, label, color = "#4CAF50" }) => {
   const percentage = Math.min(Math.max(score * 10, 0), 100);
-  
+
   return (
     <div className="score-meter">
       <div className="score-label">{label}</div>
       <div className="meter-container">
         <div className="meter-track">
-          <div 
+          <div
             className="meter-fill"
             style={{ width: `${percentage}%`, backgroundColor: color }}
           ></div>
@@ -103,11 +109,14 @@ const ScoreMeter: React.FC<{ score: number; label: string; color?: string }> = (
 };
 
 // プログレスバーコンポーネント
-const ProgressBar: React.FC<{ value: number; max: number; label: string; color?: string }> = ({ 
-  value, max, label, color = '#2196F3' 
-}) => {
+const ProgressBar: React.FC<{
+  value: number;
+  max: number;
+  label: string;
+  color?: string;
+}> = ({ value, max, label, color = "#2196F3" }) => {
   const percentage = Math.min((value / max) * 100, 100);
-  
+
   return (
     <div className="progress-bar">
       <div className="progress-label">
@@ -115,7 +124,7 @@ const ProgressBar: React.FC<{ value: number; max: number; label: string; color?:
         <span>{value.toFixed(1)}</span>
       </div>
       <div className="progress-track">
-        <div 
+        <div
           className="progress-fill"
           style={{ width: `${percentage}%`, backgroundColor: color }}
         ></div>
@@ -125,16 +134,19 @@ const ProgressBar: React.FC<{ value: number; max: number; label: string; color?:
 };
 
 // スターレーティングコンポーネント
-const StarRating: React.FC<{ rating: number; label: string }> = ({ rating, label }) => {
+const StarRating: React.FC<{ rating: number; label: string }> = ({
+  rating,
+  label,
+}) => {
   const stars = Math.round(rating);
-  
+
   return (
     <div className="star-rating">
       <span className="rating-label">{label}</span>
       <div className="stars">
         {[1, 2, 3, 4, 5].map(star => (
-          <span key={star} className={star <= stars ? 'star filled' : 'star'}>
-            ⭐
+          <span key={star} className={star <= stars ? "star filled" : "star"}>
+            ★
           </span>
         ))}
       </div>
@@ -145,31 +157,50 @@ const StarRating: React.FC<{ rating: number; label: string }> = ({ rating, label
 
 // リスク色を取得する関数
 const getRiskColor = (risk: number) => {
-  if (risk >= 7) return '#f44336'; // 赤
-  if (risk >= 4) return '#ff9800'; // オレンジ
-  return '#4CAF50'; // 緑
+  if (risk >= 7) return "#f44336"; // 赤
+  if (risk >= 4) return "#ff9800"; // オレンジ
+  return "#4CAF50"; // 緑
 };
 
 // センチメント色を取得する関数
 const getSentimentColor = (sentiment: string) => {
   switch (sentiment) {
-    case 'bullish': return '#4CAF50';
-    case 'bearish': return '#f44336';
-    default: return '#ff9800';
+    case "bullish":
+      return "#4CAF50";
+    case "bearish":
+      return "#f44336";
+    default:
+      return "#ff9800";
   }
 };
 
 // トレンド矢印を取得する関数
 const getTrendIcon = (trend: string) => {
   switch (trend) {
-    case 'uptrend': return '📈';
-    case 'downtrend': return '📉';
-    default: return '➡️';
+    case "uptrend":
+      return "↗";
+    case "downtrend":
+      return "↘";
+    default:
+      return "→";
   }
 };
 
 export default function AIKarteDisplay({ analysisData, onClose }: Props) {
-  const { stockInfo, companyOverview, basicMetrics, aiScores, financialHealth, marketSentiment, competitors, technicalIndicators, investmentStyles, risks, opportunities, aiSummary } = analysisData;
+  const {
+    stockInfo,
+    companyOverview,
+    basicMetrics,
+    aiScores,
+    financialHealth,
+    marketSentiment,
+    competitors,
+    technicalIndicators,
+    investmentStyles,
+    risks,
+    opportunities,
+    aiSummary,
+  } = analysisData;
 
   return (
     <div className="ai-karte-overlay">
@@ -179,26 +210,41 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
           <div className="header-left">
             <h1 className="stock-title">
               {stockInfo.name} ({stockInfo.code})
-              {stockInfo.market === 'US' && <span className="market-flag">🇺🇸</span>}
-              {stockInfo.market === 'JP' && <span className="market-flag">🇯🇵</span>}
+              {stockInfo.market === "US" && (
+                <span className="market-flag">🇺🇸</span>
+              )}
+              {stockInfo.market === "JP" && (
+                <span className="market-flag">🇯🇵</span>
+              )}
             </h1>
             <div className="price-info">
-              <span className="current-price">¥{stockInfo.price.toLocaleString()}</span>
-              <span className={`price-change ${stockInfo.changePercent >= 0 ? 'positive' : 'negative'}`}>
-                {stockInfo.changePercent >= 0 ? '+' : ''}{stockInfo.changePercent.toFixed(2)}%
+              <span className="current-price">
+                ¥{stockInfo.price.toLocaleString()}
+              </span>
+              <span
+                className={`price-change ${
+                  stockInfo.changePercent >= 0 ? "positive" : "negative"
+                }`}
+              >
+                {stockInfo.changePercent >= 0 ? "+" : ""}
+                {stockInfo.changePercent.toFixed(2)}%
               </span>
             </div>
-            <div className="last-updated">最終更新: {stockInfo.lastUpdated}</div>
+            <div className="last-updated">
+              最終更新: {stockInfo.lastUpdated}
+            </div>
           </div>
           {onClose && (
-            <button className="close-button" onClick={onClose}>×</button>
+            <button className="close-button" onClick={onClose}>
+              ×
+            </button>
           )}
         </div>
 
-        {/* 会社概要 */}
+        {/* 企業概要 */}
         {companyOverview && (
           <div className="karte-section company-overview">
-            <h2>🏢 会社概要</h2>
+            <h2>🏢 企業概要</h2>
             <div className="overview-content">
               <div className="overview-main">
                 <h3>{companyOverview.business}</h3>
@@ -207,7 +253,9 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
               <div className="overview-details">
                 <div className="detail-item">
                   <span className="detail-label">業種</span>
-                  <span className="detail-value">{companyOverview.industry}</span>
+                  <span className="detail-value">
+                    {companyOverview.industry}
+                  </span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">セクター</span>
@@ -215,20 +263,30 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">設立</span>
-                  <span className="detail-value">{companyOverview.founded}</span>
+                  <span className="detail-value">
+                    {companyOverview.founded}
+                  </span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">従業員数</span>
-                  <span className="detail-value">{companyOverview.employees.toLocaleString()}名</span>
+                  <span className="detail-value">
+                    {companyOverview.employees.toLocaleString()}名
+                  </span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">本社</span>
-                  <span className="detail-value">{companyOverview.headquarters}</span>
+                  <span className="detail-value">
+                    {companyOverview.headquarters}
+                  </span>
                 </div>
                 <div className="detail-item">
                   <span className="detail-label">ウェブサイト</span>
                   <span className="detail-value">
-                    <a href={companyOverview.website} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={companyOverview.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {companyOverview.website}
                     </a>
                   </span>
@@ -252,10 +310,9 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
         <div className="karte-body">
           {/* 左カラム */}
           <div className="karte-column">
-            
             {/* 基本投資指標 */}
             <div className="karte-section">
-              <h3>📊 基本投資指標</h3>
+              <h3>💰 基本投資指標</h3>
               <div className="metrics-grid">
                 <div className="metric-item">
                   <span className="metric-label">配当</span>
@@ -263,83 +320,133 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">配当利回り</span>
-                  <span className="metric-value">{basicMetrics.dividendYield}%</span>
+                  <span className="metric-value">
+                    {basicMetrics.dividendYield}%
+                  </span>
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">PER</span>
-                  <span className="metric-value">{basicMetrics.per}倍</span>
+                  <span className="metric-value">{basicMetrics.per}</span>
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">PBR</span>
-                  <span className="metric-value">{basicMetrics.pbr}倍</span>
+                  <span className="metric-value">{basicMetrics.pbr}</span>
                 </div>
                 <div className="metric-item">
                   <span className="metric-label">ROE</span>
                   <span className="metric-value">{basicMetrics.roe}%</span>
                 </div>
                 <div className="metric-item">
-                  <span className="metric-label">時価総額</span>
-                  <span className="metric-value">{(basicMetrics.marketCap / 1000000000).toFixed(0)}億円</span>
+                  <span className="metric-label">売上成長率</span>
+                  <span className="metric-value">
+                    {basicMetrics.revenueGrowth}%
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* AI分析スコア */}
+            {/* AIスコア分析 */}
             <div className="karte-section">
-              <h3>🎯 AI分析スコア</h3>
+              <h3>🎯 AIスコア分析</h3>
               <div className="scores-container">
-                <ScoreMeter score={aiScores.investmentScore} label="投資スコア" color="#4CAF50" />
-                <ScoreMeter score={aiScores.growthPrediction} label="成長予測" color="#2196F3" />
-                <ScoreMeter score={aiScores.riskAssessment} label="リスク評価" color={getRiskColor(aiScores.riskAssessment)} />
+                <ScoreMeter
+                  score={aiScores.totalScore}
+                  label="総合スコア"
+                  color="#4CAF50"
+                />
+                <ScoreMeter
+                  score={aiScores.growthPotential}
+                  label="成長性"
+                  color="#2196F3"
+                />
+                <ScoreMeter
+                  score={aiScores.profitability}
+                  label="収益性"
+                  color="#FF9800"
+                />
+                <ScoreMeter
+                  score={aiScores.stability}
+                  label="安定性"
+                  color="#9C27B0"
+                />
+                <ScoreMeter
+                  score={aiScores.value}
+                  label="割安性"
+                  color="#795548"
+                />
               </div>
             </div>
 
             {/* 財務健全性 */}
             <div className="karte-section">
-              <h3>💰 財務健全性</h3>
+              <h3>📊 財務健全性</h3>
               <div className="financial-health">
-                <ProgressBar value={financialHealth.profitability} max={10} label="収益性" color="#4CAF50" />
-                <ProgressBar value={financialHealth.stability} max={10} label="安定性" color="#2196F3" />
-                <ProgressBar value={financialHealth.growth} max={10} label="成長性" color="#9C27B0" />
-                <ProgressBar value={financialHealth.efficiency} max={10} label="効率性" color="#FF9800" />
-                <ProgressBar value={financialHealth.liquidity} max={10} label="流動性" color="#00BCD4" />
+                <ProgressBar
+                  value={financialHealth.debtToEquity}
+                  max={100}
+                  label="負債比率"
+                  color="#f44336"
+                />
+                <ProgressBar
+                  value={financialHealth.currentRatio}
+                  max={5}
+                  label="流動比率"
+                  color="#4CAF50"
+                />
+                <ProgressBar
+                  value={financialHealth.cashFlow}
+                  max={100}
+                  label="キャッシュフロー"
+                  color="#2196F3"
+                />
+                <ProgressBar
+                  value={financialHealth.interestCoverage}
+                  max={20}
+                  label="利息カバー率"
+                  color="#FF9800"
+                />
               </div>
             </div>
-
           </div>
 
           {/* 右カラム */}
           <div className="karte-column">
-            
-            {/* マーケット情勢 */}
+            {/* 市場センチメント */}
             <div className="karte-section">
-              <h3>📰 マーケット情勢</h3>
-              <div className="market-sentiment">
-                <div className="sentiment-header">
-                  <div className="sentiment-badge" style={{ backgroundColor: getSentimentColor(marketSentiment.sentiment) }}>
-                    {marketSentiment.sentiment === 'bullish' ? '🐂 強気' : 
-                     marketSentiment.sentiment === 'bearish' ? '🐻 弱気' : '😐 中立'}
-                  </div>
-                  <div className="sentiment-score">{marketSentiment.newsScore}/10</div>
+              <h3>📈 市場センチメント</h3>
+              <div className="sentiment-container">
+                <div className="sentiment-item">
+                  <span className="sentiment-label">総合センチメント</span>
+                  <span
+                    className="sentiment-value"
+                    style={{
+                      color: getSentimentColor(marketSentiment.sentiment),
+                    }}
+                  >
+                    {marketSentiment.sentiment === "bullish"
+                      ? "強気"
+                      : marketSentiment.sentiment === "bearish"
+                        ? "弱気"
+                        : "中立"}
+                  </span>
                 </div>
                 <div className="sentiment-details">
                   <div className="sentiment-item">
-                    <span>アナリスト評価</span>
-                    <div className="rating-stars">
-                      {'★'.repeat(Math.round(marketSentiment.analystRating))}{'☆'.repeat(5 - Math.round(marketSentiment.analystRating))}
-                    </div>
-                  </div>
-                  <div className="sentiment-item">
-                    <span>SNS言及度</span>
-                    <span className="mention-level">
-                      {marketSentiment.socialMention >= 8 ? '🔥 話題沸騰' : 
-                       marketSentiment.socialMention >= 5 ? '📢 注目中' : '😴 静か'}
+                    <span className="sentiment-label">ニュース</span>
+                    <span className="sentiment-score">
+                      {marketSentiment.newsScore.toFixed(1)}/10
                     </span>
                   </div>
                   <div className="sentiment-item">
-                    <span>機関投資家フロー</span>
-                    <span className={`flow ${marketSentiment.institutionalFlow >= 0 ? 'inflow' : 'outflow'}`}>
-                      {marketSentiment.institutionalFlow >= 0 ? '📈 流入' : '📉 流出'}
+                    <span className="sentiment-label">アナリスト</span>
+                    <span className="sentiment-score">
+                      {marketSentiment.analystRating.toFixed(1)}/5
+                    </span>
+                  </div>
+                  <div className="sentiment-item">
+                    <span className="sentiment-label">ソーシャル</span>
+                    <span className="sentiment-score">
+                      {marketSentiment.socialMention.toFixed(1)}/10
                     </span>
                   </div>
                 </div>
@@ -348,21 +455,28 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
 
             {/* 競合比較 */}
             <div className="karte-section">
-              <h3>🏆 競合比較</h3>
-              <div className="competitors-list">
+              <h3>⚔️ 競合比較</h3>
+              <div className="competitors-container">
                 {competitors.map((competitor, index) => (
                   <div key={index} className="competitor-item">
                     <span className="competitor-name">{competitor.name}</span>
                     <div className="competitor-score">
                       <div className="score-bar">
-                        <div 
+                        <div
                           className="score-fill"
                           style={{ width: `${competitor.score * 10}%` }}
                         ></div>
                       </div>
-                      <span className="score-text">{competitor.score.toFixed(1)}</span>
-                      <span className={`change ${competitor.change >= 0 ? 'positive' : 'negative'}`}>
-                        {competitor.change >= 0 ? '+' : ''}{competitor.change.toFixed(1)}%
+                      <span className="score-text">
+                        {competitor.score.toFixed(1)}
+                      </span>
+                      <span
+                        className={`change ${
+                          competitor.change >= 0 ? "positive" : "negative"
+                        }`}
+                      >
+                        {competitor.change >= 0 ? "+" : ""}
+                        {competitor.change.toFixed(1)}%
                       </span>
                     </div>
                   </div>
@@ -372,40 +486,54 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
 
             {/* テクニカル指標 */}
             <div className="karte-section">
-              <h3>📈 テクニカル指標</h3>
+              <h3>📊 テクニカル指標</h3>
               <div className="technical-indicators">
                 <div className="trend-indicator">
-                  <span className="trend-icon">{getTrendIcon(technicalIndicators.trend)}</span>
+                  <span className="trend-icon">
+                    {getTrendIcon(technicalIndicators.trend)}
+                  </span>
                   <span className="trend-text">
-                    {technicalIndicators.trend === 'uptrend' ? '上昇トレンド' :
-                     technicalIndicators.trend === 'downtrend' ? '下降トレンド' : '横這い'}
+                    {technicalIndicators.trend === "uptrend"
+                      ? "上昇トレンド"
+                      : technicalIndicators.trend === "downtrend"
+                        ? "下降トレンド"
+                        : "横ばい"}
                   </span>
                 </div>
                 <div className="technical-grid">
                   <div className="tech-item">
                     <span className="tech-label">RSI</span>
-                    <span className="tech-value">{technicalIndicators.rsi}</span>
+                    <span className="tech-value">
+                      {technicalIndicators.rsi}
+                    </span>
                   </div>
                   <div className="tech-item">
                     <span className="tech-label">20日線</span>
-                    <span className="tech-value">¥{technicalIndicators.sma20.toLocaleString()}</span>
+                    <span className="tech-value">
+                      ¥{technicalIndicators.sma20.toLocaleString()}
+                    </span>
                   </div>
                   <div className="tech-item">
                     <span className="tech-label">50日線</span>
-                    <span className="tech-value">¥{technicalIndicators.sma50.toLocaleString()}</span>
+                    <span className="tech-value">
+                      ¥{technicalIndicators.sma50.toLocaleString()}
+                    </span>
                   </div>
                   <div className="tech-item">
                     <span className="tech-label">出来高</span>
-                    <span className="tech-value">{technicalIndicators.volume}</span>
+                    <span className="tech-value">
+                      {technicalIndicators.volume}
+                    </span>
                   </div>
                   <div className="tech-item">
                     <span className="tech-label">ボラティリティ</span>
-                    <span className="tech-value">{technicalIndicators.volatility}%</span>
+                    <span className="tech-value">
+                      {technicalIndicators.volatility}%
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
 
@@ -416,8 +544,14 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
             <StarRating rating={investmentStyles.growth} label="グロース投資" />
             <StarRating rating={investmentStyles.value} label="バリュー投資" />
             <StarRating rating={investmentStyles.dividend} label="配当投資" />
-            <StarRating rating={investmentStyles.momentum} label="モメンタム投資" />
-            <StarRating rating={investmentStyles.quality} label="クオリティ投資" />
+            <StarRating
+              rating={investmentStyles.momentum}
+              label="モメンタム投資"
+            />
+            <StarRating
+              rating={investmentStyles.quality}
+              label="クオリティ投資"
+            />
           </div>
         </div>
 
@@ -433,7 +567,7 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
               </ul>
             </div>
             <div className="opportunities-section">
-              <h4>🌟 成長機会</h4>
+              <h4>✅ 投資機会</h4>
               <ul>
                 {opportunities.map((opportunity, index) => (
                   <li key={index}>{opportunity}</li>
@@ -445,7 +579,10 @@ export default function AIKarteDisplay({ analysisData, onClose }: Props) {
 
         {/* 免責事項 */}
         <div className="disclaimer">
-          <p>⚠️ この分析は投資判断の参考情報であり、投資を勧誘するものではありません。投資は自己責任でお願いします。</p>
+          <p>
+            ⚠️
+            この分析は投資判断の参考情報であり、投資を推奨するものではありません。投資は自己責任で行いください。
+          </p>
         </div>
       </div>
     </div>

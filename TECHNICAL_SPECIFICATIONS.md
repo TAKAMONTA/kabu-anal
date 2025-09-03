@@ -10,6 +10,7 @@
 ## 🏗️ システムアーキテクチャ
 
 ### 全体構成図
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        Frontend (Next.js)                   │
@@ -41,6 +42,7 @@
 ## 📁 プロジェクト構造
 
 ### 現在のファイル構造
+
 ```
 kabu-anal/
 ├── app/
@@ -74,6 +76,7 @@ kabu-anal/
 ```
 
 ### 追加予定のファイル構造
+
 ```
 app/
 ├── login/
@@ -122,6 +125,7 @@ app/
 ### Next.js 設定
 
 #### next.config.js
+
 ```javascript
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -130,8 +134,8 @@ const nextConfig = {
   },
   images: {
     domains: [
-      'lh3.googleusercontent.com', // Google プロフィール画像
-      'firebasestorage.googleapis.com', // Firebase Storage
+      "lh3.googleusercontent.com", // Google プロフィール画像
+      "firebasestorage.googleapis.com", // Firebase Storage
     ],
   },
   env: {
@@ -140,21 +144,28 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/api/:path*',
+        source: "/api/:path*",
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+          { key: "Access-Control-Allow-Origin", value: "*" },
+          {
+            key: "Access-Control-Allow-Methods",
+            value: "GET, POST, PUT, DELETE, OPTIONS",
+          },
+          {
+            key: "Access-Control-Allow-Headers",
+            value: "Content-Type, Authorization",
+          },
         ],
       },
     ];
   },
-}
+};
 
 module.exports = nextConfig;
 ```
 
 #### tsconfig.json
+
 ```json
 {
   "compilerOptions": {
@@ -195,6 +206,7 @@ module.exports = nextConfig;
 ### Firebase 設定
 
 #### firebase.json
+
 ```json
 {
   "firestore": {
@@ -203,11 +215,7 @@ module.exports = nextConfig;
   },
   "hosting": {
     "public": "out",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
         "source": "**",
@@ -222,6 +230,7 @@ module.exports = nextConfig;
 ```
 
 #### firestore.rules
+
 ```javascript
 rules_version = '2';
 service cloud.firestore {
@@ -230,34 +239,34 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // 分析履歴
     match /analyses/{analysisId} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
-    
+
     // お気に入り
     match /favorites/{favoriteId} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
     }
-    
+
     // ユーザー統計
     match /user_stats/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
+
     // 公開データ（市場情報等）
     match /public/{document=**} {
       allow read: if true;
-      allow write: if request.auth != null && 
+      allow write: if request.auth != null &&
         request.auth.token.admin == true;
     }
-    
+
     // システム設定（管理者のみ）
     match /system/{document=**} {
-      allow read, write: if request.auth != null && 
+      allow read, write: if request.auth != null &&
         request.auth.token.admin == true;
     }
   }
@@ -265,6 +274,7 @@ service cloud.firestore {
 ```
 
 #### firestore.indexes.json
+
 ```json
 {
   "indexes": [
@@ -320,8 +330,9 @@ service cloud.firestore {
 ### Firebase Authentication 設定
 
 #### app/lib/auth.ts
+
 ```typescript
-import { 
+import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
@@ -330,15 +341,15 @@ import {
   onAuthStateChanged,
   User,
   sendPasswordResetEmail,
-  updateProfile
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from './firebase';
+  updateProfile,
+} from "firebase/auth";
+import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { auth, db } from "./firebase";
 
 // Google認証プロバイダー
 const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: "select_account",
 });
 
 // ユーザー情報の型定義
@@ -347,12 +358,12 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL?: string;
-  plan: 'free' | 'premium';
+  plan: "free" | "premium";
   createdAt: Date;
   lastLoginAt: Date;
   preferences: {
-    theme: 'light' | 'dark';
-    language: 'ja' | 'en';
+    theme: "light" | "dark";
+    language: "ja" | "en";
     notifications: boolean;
   };
 }
@@ -370,19 +381,19 @@ export const signInWithEmail = async (email: string, password: string) => {
 
 // メール・パスワードで新規登録
 export const signUpWithEmail = async (
-  email: string, 
-  password: string, 
+  email: string,
+  password: string,
   displayName: string
 ) => {
   try {
     const result = await createUserWithEmailAndPassword(auth, email, password);
-    
+
     // プロフィール更新
     await updateProfile(result.user, { displayName });
-    
+
     // Firestoreにユーザー情報を保存
     await createUserProfile(result.user, { displayName });
-    
+
     return result;
   } catch (error) {
     throw error;
@@ -393,15 +404,15 @@ export const signUpWithEmail = async (
 export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
-    
+
     // 初回ログインの場合、ユーザープロフィールを作成
-    const userDoc = await getDoc(doc(db, 'users', result.user.uid));
+    const userDoc = await getDoc(doc(db, "users", result.user.uid));
     if (!userDoc.exists()) {
       await createUserProfile(result.user);
     } else {
       await updateLastLogin(result.user.uid);
     }
-    
+
     return result;
   } catch (error) {
     throw error;
@@ -428,39 +439,39 @@ export const resetPassword = async (email: string) => {
 
 // ユーザープロフィール作成
 const createUserProfile = async (
-  user: User, 
+  user: User,
   additionalData?: { displayName?: string }
 ) => {
   const userProfile: UserProfile = {
     uid: user.uid,
     email: user.email!,
-    displayName: additionalData?.displayName || user.displayName || '',
+    displayName: additionalData?.displayName || user.displayName || "",
     photoURL: user.photoURL || undefined,
-    plan: 'free',
+    plan: "free",
     createdAt: new Date(),
     lastLoginAt: new Date(),
     preferences: {
-      theme: 'light',
-      language: 'ja',
-      notifications: true
-    }
+      theme: "light",
+      language: "ja",
+      notifications: true,
+    },
   };
-  
-  await setDoc(doc(db, 'users', user.uid), userProfile);
-  
+
+  await setDoc(doc(db, "users", user.uid), userProfile);
+
   // ユーザー統計の初期化
-  await setDoc(doc(db, 'user_stats', user.uid), {
+  await setDoc(doc(db, "user_stats", user.uid), {
     totalAnalyses: 0,
     favoriteCount: 0,
     lastAnalysisAt: null,
-    monthlyUsage: {}
+    monthlyUsage: {},
   });
 };
 
 // 最終ログイン時刻更新
 const updateLastLogin = async (uid: string) => {
-  await updateDoc(doc(db, 'users', uid), {
-    lastLoginAt: new Date()
+  await updateDoc(doc(db, "users", uid), {
+    lastLoginAt: new Date(),
   });
 };
 
@@ -473,6 +484,7 @@ export const onAuthStateChange = (callback: (user: User | null) => void) => {
 ### 認証フック
 
 #### app/hooks/useAuth.ts
+
 ```typescript
 'use client';
 
@@ -507,7 +519,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChange((user) => {
       setUser(user);
       setLoading(false);
-      
+
       if (user) {
         // ユーザープロフィールをリアルタイム監視
         const unsubscribeProfile = onSnapshot(
@@ -521,7 +533,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setError(error.message);
           }
         );
-        
+
         return () => unsubscribeProfile();
       } else {
         setUserProfile(null);
@@ -552,31 +564,33 @@ export const useAuth = () => {
 ### Firestore コレクション仕様
 
 #### users コレクション
+
 ```typescript
 interface User {
-  uid: string;                    // Firebase Auth UID
-  email: string;                  // メールアドレス
-  displayName: string;            // 表示名
-  photoURL?: string;              // プロフィール画像URL
-  plan: 'free' | 'premium';       // プラン
-  createdAt: Timestamp;           // 作成日時
-  lastLoginAt: Timestamp;         // 最終ログイン日時
+  uid: string; // Firebase Auth UID
+  email: string; // メールアドレス
+  displayName: string; // 表示名
+  photoURL?: string; // プロフィール画像URL
+  plan: "free" | "premium"; // プラン
+  createdAt: Timestamp; // 作成日時
+  lastLoginAt: Timestamp; // 最終ログイン日時
   preferences: {
-    theme: 'light' | 'dark';      // テーマ
-    language: 'ja' | 'en';        // 言語
-    notifications: boolean;        // 通知設定
+    theme: "light" | "dark"; // テーマ
+    language: "ja" | "en"; // 言語
+    notifications: boolean; // 通知設定
   };
 }
 ```
 
 #### analyses コレクション
+
 ```typescript
 interface Analysis {
-  id: string;                     // ドキュメントID
-  userId: string;                 // ユーザーID
-  stockCode: string;              // 銘柄コード
-  stockName: string;              // 銘柄名
-  market: 'JP' | 'US';           // 市場
+  id: string; // ドキュメントID
+  userId: string; // ユーザーID
+  stockCode: string; // 銘柄コード
+  stockName: string; // 銘柄名
+  market: "JP" | "US"; // 市場
   analysisData: {
     stockInfo: {
       code: string;
@@ -612,40 +626,43 @@ interface Analysis {
     };
     // ... その他の分析データ
   };
-  createdAt: Timestamp;           // 作成日時
-  isPublic: boolean;              // 公開設定
-  tags?: string[];                // タグ
+  createdAt: Timestamp; // 作成日時
+  isPublic: boolean; // 公開設定
+  tags?: string[]; // タグ
 }
 ```
 
 #### favorites コレクション
+
 ```typescript
 interface Favorite {
-  id: string;                     // ドキュメントID
-  userId: string;                 // ユーザーID
-  stockCode: string;              // 銘柄コード
-  stockName: string;              // 銘柄名
-  market: 'JP' | 'US';           // 市場
-  addedAt: Timestamp;             // 追加日時
-  notes?: string;                 // メモ
+  id: string; // ドキュメントID
+  userId: string; // ユーザーID
+  stockCode: string; // 銘柄コード
+  stockName: string; // 銘柄名
+  market: "JP" | "US"; // 市場
+  addedAt: Timestamp; // 追加日時
+  notes?: string; // メモ
 }
 ```
 
 #### user_stats コレクション
+
 ```typescript
 interface UserStats {
-  userId: string;                 // ユーザーID（ドキュメントID）
-  totalAnalyses: number;          // 総分析回数
-  favoriteCount: number;          // お気に入り数
+  userId: string; // ユーザーID（ドキュメントID）
+  totalAnalyses: number; // 総分析回数
+  favoriteCount: number; // お気に入り数
   lastAnalysisAt: Timestamp | null; // 最終分析日時
   monthlyUsage: {
-    [yearMonth: string]: {        // 'YYYY-MM' 形式
-      analyses: number;           // 月間分析回数
-      favorites: number;          // 月間お気に入り追加数
+    [yearMonth: string]: {
+      // 'YYYY-MM' 形式
+      analyses: number; // 月間分析回数
+      favorites: number; // 月間お気に入り追加数
     };
   };
-  streakDays: number;             // 連続利用日数
-  achievements: string[];         // 達成バッジ
+  streakDays: number; // 連続利用日数
+  achievements: string[]; // 達成バッジ
 }
 ```
 
@@ -654,6 +671,7 @@ interface UserStats {
 ### 共通コンポーネント
 
 #### Button コンポーネント
+
 ```typescript
 // app/components/ui/Button.tsx
 interface ButtonProps {
@@ -676,20 +694,20 @@ export const Button: React.FC<ButtonProps> = ({
   className = ''
 }) => {
   const baseClasses = 'font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2';
-  
+
   const variantClasses = {
     primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
     secondary: 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
     outline: 'border-2 border-blue-600 text-blue-600 hover:bg-blue-50 focus:ring-blue-500',
     ghost: 'text-blue-600 hover:bg-blue-50 focus:ring-blue-500'
   };
-  
+
   const sizeClasses = {
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2 text-base',
     lg: 'px-6 py-3 text-lg'
   };
-  
+
   return (
     <button
       className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className} ${
@@ -706,6 +724,7 @@ export const Button: React.FC<ButtonProps> = ({
 ```
 
 #### Modal コンポーネント
+
 ```typescript
 // app/components/ui/Modal.tsx
 interface ModalProps {
@@ -724,22 +743,22 @@ export const Modal: React.FC<ModalProps> = ({
   size = 'md'
 }) => {
   if (!isOpen) return null;
-  
+
   const sizeClasses = {
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
     xl: 'max-w-4xl'
   };
-  
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div 
+        <div
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
           onClick={onClose}
         />
-        
+
         <div className={`inline-block w-full ${sizeClasses[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl`}>
           {title && (
             <div className="flex items-center justify-between mb-4">
@@ -765,33 +784,34 @@ export const Modal: React.FC<ModalProps> = ({
 ### AI分析API拡張
 
 #### app/api/ai-analysis/route.ts（拡張版）
+
 ```typescript
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { doc, setDoc, updateDoc, increment } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { doc, setDoc, updateDoc, increment } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export async function POST(request: NextRequest) {
   try {
     // 認証チェック
     const session = await getServerSession();
     if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
+
     const { stockCode, market, step, previousData } = await request.json();
-    
+
     // レート制限チェック
     const canAnalyze = await checkRateLimit(session.user.id);
     if (!canAnalyze) {
       return NextResponse.json(
-        { error: 'Rate limit exceeded' }, 
+        { error: "Rate limit exceeded" },
         { status: 429 }
       );
     }
-    
+
     let result;
-    
+
     switch (step) {
       case 1:
         result = await identifyCompany(stockCode, market);
@@ -801,27 +821,26 @@ export async function POST(request: NextRequest) {
         break;
       case 3:
         result = await performDetailedAnalysis(stockCode, market, previousData);
-        
+
         // 分析結果をFirestoreに保存
         await saveAnalysisResult(session.user.id, {
           stockCode,
           market,
           analysisData: result,
         });
-        
+
         // ユーザー統計を更新
         await updateUserStats(session.user.id);
         break;
       default:
-        return NextResponse.json({ error: 'Invalid step' }, { status: 400 });
+        return NextResponse.json({ error: "Invalid step" }, { status: 400 });
     }
-    
+
     return NextResponse.json(result);
-    
   } catch (error) {
-    console.error('AI Analysis Error:', error);
+    console.error("AI Analysis Error:", error);
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
@@ -837,22 +856,22 @@ async function checkRateLimit(userId: string): Promise<boolean> {
 // 分析結果保存
 async function saveAnalysisResult(userId: string, analysisData: any) {
   const analysisId = `${userId}_${Date.now()}`;
-  await setDoc(doc(db, 'analyses', analysisId), {
+  await setDoc(doc(db, "analyses", analysisId), {
     userId,
     ...analysisData,
     createdAt: new Date(),
-    isPublic: false
+    isPublic: false,
   });
 }
 
 // ユーザー統計更新
 async function updateUserStats(userId: string) {
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-  
-  await updateDoc(doc(db, 'user_stats', userId), {
+
+  await updateDoc(doc(db, "user_stats", userId), {
     totalAnalyses: increment(1),
     lastAnalysisAt: new Date(),
-    [`monthlyUsage.${currentMonth}.analyses`]: increment(1)
+    [`monthlyUsage.${currentMonth}.analyses`]: increment(1),
   });
 }
 ```
@@ -860,6 +879,7 @@ async function updateUserStats(userId: string) {
 ### ユーザーデータAPI
 
 #### app/api/user/profile/route.ts
+
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
@@ -873,12 +893,12 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const userDoc = await getDoc(doc(db, 'users', session.user.id));
     if (!userDoc.exists()) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-    
+
     return NextResponse.json(userDoc.data());
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -889,3 +909,4 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await
+```

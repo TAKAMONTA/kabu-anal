@@ -5,8 +5,9 @@ AI技術を活用した個人投資家向けの株式分析プラットフォー
 ## ✨ 主な機能
 
 ### 📊 AIカルテ機能（実装済み）
+
 - **銘柄検索**: 日本株・米国株の検索機能
-- **3段階AI分析**: 
+- **3段階AI分析**:
   1. 企業情報の特定
   2. 最新株価の取得
   3. 詳細な投資分析
@@ -22,6 +23,7 @@ AI技術を活用した個人投資家向けの株式分析プラットフォー
   - リスクと成長機会
 
 ### 🚀 今後実装予定
+
 - 📰 市場ニュース（AI要約機能付き）
 - 💼 ポートフォリオ管理
 - 🤖 AIディベート（複数AI視点での分析）
@@ -38,17 +40,20 @@ AI技術を活用した個人投資家向けの株式分析プラットフォー
 ## 🚀 セットアップ
 
 ### 1. リポジトリのクローン
+
 ```bash
 git clone [your-repo-url]
 cd kabu-ana-simple
 ```
 
 ### 2. 依存関係のインストール
+
 ```bash
 npm install
 ```
 
 ### 3. 環境変数の設定
+
 `.env.local`ファイルを作成し、必要なAPIキーを設定：
 
 ```bash
@@ -57,6 +62,7 @@ cp .env.example .env.local
 ```
 
 ### 4. 開発サーバーの起動
+
 ```bash
 npm run dev
 ```
@@ -72,32 +78,39 @@ npm run dev
 - **Gemini API**: [取得先](https://makersuite.google.com/app/apikey)
 
 オプション（リアルタイム株価データ用）：
+
 - **Alpha Vantage API**: [取得先](https://www.alphavantage.co/)
 
 ## 📦 Vercelへのデプロイ
 
 ### 1. Vercel CLIのインストール
+
 ```bash
 npm i -g vercel
 ```
 
 ### 2. Vercelにログイン
+
 ```bash
 vercel login
 ```
 
 ### 3. プロジェクトのデプロイ
+
 ```bash
 vercel
 ```
 
 ### 4. 環境変数の設定
+
 Vercelダッシュボードで以下の環境変数を設定：
+
 - `OPENAI_API_KEY`
 - `CLAUDE_API_KEY`（オプション）
 - `GEMINI_API_KEY`（オプション）
 
 ### 5. 本番環境へのデプロイ
+
 ```bash
 vercel --prod
 ```
@@ -128,4 +141,3 @@ MIT
 ---
 
 Made with ❤️ by [Your Name]# Deployment trigger
-

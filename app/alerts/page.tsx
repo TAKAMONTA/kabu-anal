@@ -1,11 +1,11 @@
-import UnderDevelopment from '../components/UnderDevelopment';
+﻿import UnderDevelopment from "../components/UnderDevelopment";
 
 export default function AlertsPage() {
   return (
     <UnderDevelopment
-      title="アラート"
+      title="アラート機能"
       icon="🔔"
-      description="価格変動を自動監視"
+      description="株価変動の通知設定機能"
     />
   );
 }

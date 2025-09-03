@@ -37,18 +37,21 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
 ### 3. Firebaseサービスの有効化
 
 #### Authentication（認証）
+
 1. Firebaseコンソール → Authentication
 2. 「始める」をクリック
 3. 「メール/パスワード」を有効化
 4. 「Google」プロバイダーも有効化（オプション）
 
 #### Firestore Database（データベース）
+
 1. Firebaseコンソール → Firestore Database
 2. 「データベースを作成」をクリック
 3. 「本番環境で開始」を選択
 4. リージョン: `asia-northeast1 (Tokyo)` を選択
 
 #### Storage（ファイル保存）
+
 1. Firebaseコンソール → Storage
 2. 「始める」をクリック
 3. セキュリティルールを設定
@@ -56,6 +59,7 @@ NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your-measurement-id
 ### 4. セキュリティルールの設定
 
 #### Firestoreセキュリティルール
+
 ```javascript
 rules_version = '2';
 service cloud.firestore {
@@ -69,6 +73,7 @@ service cloud.firestore {
 ```
 
 #### Storageセキュリティルール
+
 ```javascript
 rules_version = '2';
 service firebase.storage {
@@ -83,21 +88,25 @@ service firebase.storage {
 ## 🚀 実装可能な機能
 
 ### 1. 認証機能
+
 - ユーザー登録・ログイン
 - パスワードリセット
 - Googleログイン
 
 ### 2. ポートフォリオ管理
+
 - ユーザー別のポートフォリオ保存
 - リアルタイムデータ同期
 - 分析履歴の保存
 
 ### 3. データベース機能
+
 - 銘柄情報の保存
 - 分析結果の履歴
 - ユーザー設定の保存
 
 ### 4. ファイル保存
+
 - 分析レポートのPDF保存
 - チャート画像の保存
 

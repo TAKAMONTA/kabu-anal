@@ -4,13 +4,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "outputDirectory": ".next",
-  "env": {
-    "OPENAI_API_KEY": "@openai_api_key",
-    "CLAUDE_API_KEY": "@claude_api_key",
-    "GEMINI_API_KEY": "@gemini_api_key",
-    "YAHOO_FINANCE_API_KEY": "@yahoo_finance_api_key",
-    "ALPHA_VANTAGE_API_KEY": "@alpha_vantage_api_key"
-  },
   "functions": {
     "app/api/ai-analysis/route.ts": {
       "maxDuration": 30

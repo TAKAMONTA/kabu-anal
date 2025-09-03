@@ -1,17 +1,17 @@
-// Firebase設定ファイル
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
+﻿// Firebase configuration
+import { initializeApp } from "firebase/app";
+import {
+  getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  User
-} from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+  type User,
+} from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
-// Firebase設定
+// Firebase config
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -19,72 +19,56 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Firebase初期化
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Firebaseサービスをエクスポート
+// Firebase services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// 認証関数
+// Authentication functions
 export const signUp = async (email: string, password: string) => {
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
     return { success: true, user: userCredential.user };
   } catch (error: any) {
-    let errorMessage = '登録に失敗しました';
-    
-    switch (error.code) {
-      case 'auth/email-already-in-use':
-        errorMessage = 'このメールアドレスは既に使用されています';
-        break;
-      case 'auth/invalid-email':
-        errorMessage = 'メールアドレスの形式が正しくありません';
-        break;
-      case 'auth/weak-password':
-        errorMessage = 'パスワードは6文字以上にしてください';
-        break;
-      case 'auth/network-request-failed':
-        errorMessage = 'ネットワークエラーが発生しました';
-        break;
+    let errorMessage = "Registration failed";
+    if (error.code === "auth/email-already-in-use") {
+      errorMessage = "This email is already registered";
+    } else if (error.code === "auth/weak-password") {
+      errorMessage = "Password should be at least 6 characters";
+    } else if (error.code === "auth/invalid-email") {
+      errorMessage = "Invalid email address";
     }
-    
     return { success: false, error: errorMessage };
   }
 };
 
 export const signIn = async (email: string, password: string) => {
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
     return { success: true, user: userCredential.user };
   } catch (error: any) {
-    let errorMessage = 'ログインに失敗しました';
-    
-    switch (error.code) {
-      case 'auth/user-not-found':
-        errorMessage = 'このメールアドレスのアカウントは存在しません';
-        break;
-      case 'auth/wrong-password':
-        errorMessage = 'パスワードが正しくありません';
-        break;
-      case 'auth/invalid-email':
-        errorMessage = 'メールアドレスの形式が正しくありません';
-        break;
-      case 'auth/user-disabled':
-        errorMessage = 'このアカウントは無効化されています';
-        break;
-      case 'auth/network-request-failed':
-        errorMessage = 'ネットワークエラーが発生しました';
-        break;
-      case 'auth/invalid-credential':
-        errorMessage = 'メールアドレスまたはパスワードが正しくありません';
-        break;
+    let errorMessage = "Login failed";
+    if (error.code === "auth/user-not-found") {
+      errorMessage = "User not found";
+    } else if (error.code === "auth/wrong-password") {
+      errorMessage = "Incorrect password";
+    } else if (error.code === "auth/invalid-email") {
+      errorMessage = "Invalid email address";
     }
-    
     return { success: false, error: errorMessage };
   }
 };
@@ -93,14 +77,11 @@ export const logout = async () => {
   try {
     await signOut(auth);
     return { success: true };
-  } catch (error) {
-    return { success: false, error: 'ログアウトに失敗しました' };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
 };
 
-// 認証状態の監視
-export const onAuthChange = (callback: (user: User | null) => void) => {
-  return onAuthStateChanged(auth, callback);
-};
-
-export default app;
+// Export types and functions
+export type { User };
+export { onAuthStateChanged };

@@ -1,4 +1,4 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -9,7 +9,9 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
   line-height: 1.6;
   color: #333;
   background-color: #f5f5f5;
@@ -59,8 +61,10 @@ h2 {
   background: white;
   padding: 25px;
   border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
   text-decoration: none;
   color: inherit;
   display: block;
@@ -68,7 +72,7 @@ h2 {
 
 .feature-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
 }
 
 .feature-icon {
@@ -87,13 +91,13 @@ h2 {
   font-size: 14px;
 }
 
-/* 検索セクション */
+/* 讀懃ｴ｢繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ */
 .search-section {
   margin: 40px 0;
   padding: 30px;
   background: white;
   border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .search-box {
@@ -112,12 +116,12 @@ h2 {
 }
 
 .search-input:focus {
-  border-color: #4CAF50;
+  border-color: #4caf50;
 }
 
 .search-button {
   padding: 12px 30px;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   border-radius: 5px;
@@ -130,7 +134,7 @@ h2 {
   background: #45a049;
 }
 
-/* サンプル銘柄 */
+/* 繧ｵ繝ｳ繝励Ν驫俶氛 */
 .sample-section {
   margin: 40px 0;
 }
@@ -150,21 +154,21 @@ h2 {
   padding: 15px;
   background: white;
   border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: transform 0.3s;
   position: relative;
   overflow: hidden;
 }
 
-/* 日本株用スタイル - 日の丸モチーフ */
+/* 譌･譛ｬ譬ｪ逕ｨ繧ｹ繧ｿ繧､繝ｫ - 譌･縺ｮ荳ｸ繝｢繝√・繝・*/
 .stock-item:not(.us-stock) {
   background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
   border: 2px solid #bc002d;
 }
 
 .stock-item:not(.us-stock)::before {
-  content: '';
+  content: "";
   position: absolute;
   width: 60px;
   height: 60px;
@@ -176,7 +180,7 @@ h2 {
 
 .stock-item:hover {
   transform: translateY(-3px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
 .stock-code {
@@ -190,7 +194,7 @@ h2 {
   color: #333;
 }
 
-/* 米国株用スタイル */
+/* 邀ｳ蝗ｽ譬ｪ逕ｨ繧ｹ繧ｿ繧､繝ｫ */
 .us-stock {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -210,14 +214,14 @@ h2 {
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* 戻るリンク */
+/* 謌ｻ繧九Μ繝ｳ繧ｯ */
 .back-link {
   margin-top: 40px;
   text-align: center;
 }
 
 .back-link a {
-  color: #4CAF50;
+  color: #4caf50;
   text-decoration: none;
   font-size: 16px;
 }
@@ -226,7 +230,7 @@ h2 {
   text-decoration: underline;
 }
 
-/* 開発中ページ */
+/* 髢狗匱荳ｭ繝壹・繧ｸ */
 .dev-container {
   text-align: center;
   padding: 40px 20px;
@@ -244,12 +248,12 @@ h2 {
   border-radius: 15px;
   margin: 40px auto;
   max-width: 600px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .dev-badge {
   display: inline-block;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   padding: 8px 20px;
   border-radius: 20px;
   font-weight: bold;
@@ -262,14 +266,14 @@ h2 {
 }
 
 .dev-notice p {
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.8;
 }
 
 .dev-features {
   margin-top: 30px;
   padding-top: 30px;
-  border-top: 1px solid rgba(255,255,255,0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .dev-features h3 {
@@ -285,11 +289,11 @@ h2 {
 }
 
 .dev-features li {
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.9);
   padding: 8px 0;
 }
 
-/* 4コマ漫画風ガイド */
+/* 4繧ｳ繝樊ｼｫ逕ｻ鬚ｨ繧ｬ繧､繝・*/
 .manga-guide {
   margin: 40px 0;
   padding: 30px;
@@ -317,13 +321,13 @@ h2 {
   border-radius: 10px;
   padding: 20px;
   position: relative;
-  box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
   transition: transform 0.3s;
 }
 
 .manga-panel:hover {
   transform: translateY(-5px);
-  box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.2);
 }
 
 .panel-number {
@@ -377,7 +381,7 @@ h2 {
 }
 
 .panel-speech::before {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -10px;
   left: 50%;
@@ -389,7 +393,7 @@ h2 {
   border-top: 10px solid #f0f0f0;
 }
 
-/* 検索結果 */
+/* 讀懃ｴ｢邨先棡 */
 .search-results {
   margin-top: 20px;
   padding: 20px;
@@ -422,7 +426,7 @@ h2 {
 
 .result-item:hover {
   background: #f0f8ff;
-  border-color: #4CAF50;
+  border-color: #4caf50;
   transform: translateX(5px);
 }
 
@@ -450,13 +454,13 @@ h2 {
   font-size: 20px;
 }
 
-/* 選択された銘柄 */
+/* 驕ｸ謚槭＆繧後◆驫俶氛 */
 .selected-stock {
   margin-top: 30px;
   padding: 20px;
   background: #e8f5e9;
   border-radius: 10px;
-  border: 2px solid #4CAF50;
+  border: 2px solid #4caf50;
 }
 
 .selected-stock h3 {
@@ -471,7 +475,7 @@ h2 {
   padding: 15px;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .selected-stock-card.us-stock {
@@ -501,7 +505,7 @@ h2 {
 
 .generate-button {
   padding: 10px 20px;
-  background: #4CAF50;
+  background: #4caf50;
   color: white;
   border: none;
   border-radius: 5px;
@@ -542,7 +546,9 @@ h2 {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* AI Karte Display Styles */
@@ -580,7 +586,7 @@ h2 {
   }
 }
 
-/* ヘッダー */
+/* 繝倥ャ繝繝ｼ */
 .karte-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -624,7 +630,7 @@ h2 {
 
 .price-change.positive {
   background: rgba(76, 175, 80, 0.2);
-  color: #4CAF50;
+  color: #4caf50;
 }
 
 .price-change.negative {
@@ -729,7 +735,7 @@ h2 {
   gap: 8px;
 }
 
-/* 基本投資指標 */
+/* 蝓ｺ譛ｬ謚戊ｳ・欠讓・*/
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -757,7 +763,7 @@ h2 {
   font-size: 16px;
 }
 
-/* スコアメーター */
+/* 繧ｹ繧ｳ繧｢繝｡繝ｼ繧ｿ繝ｼ */
 .scores-container {
   display: flex;
   flex-direction: column;
@@ -803,7 +809,7 @@ h2 {
   min-width: 50px;
 }
 
-/* プログレスバー */
+/* 繝励Ο繧ｰ繝ｬ繧ｹ繝舌・ */
 .financial-health {
   display: flex;
   flex-direction: column;
@@ -845,7 +851,7 @@ h2 {
   transition: width 0.3s ease;
 }
 
-/* マーケット情勢 */
+/* 繝槭・繧ｱ繝・ヨ諠・兇 */
 .market-sentiment {
   display: flex;
   flex-direction: column;
@@ -896,7 +902,8 @@ h2 {
   color: #ffc107;
 }
 
-.mention-level, .flow {
+.mention-level,
+.flow {
   font-weight: bold;
 }
 
@@ -908,7 +915,7 @@ h2 {
   color: #dc3545;
 }
 
-/* 競合比較 */
+/* 遶ｶ蜷域ｯ碑ｼ・*/
 .competitors-list {
   display: flex;
   flex-direction: column;
@@ -948,7 +955,7 @@ h2 {
 
 .score-fill {
   height: 100%;
-  background: #4CAF50;
+  background: #4caf50;
   border-radius: 4px;
   transition: width 0.3s ease;
 }
@@ -975,7 +982,7 @@ h2 {
   color: #dc3545;
 }
 
-/* テクニカル指標 */
+/* 繝・け繝九き繝ｫ謖・ｨ・*/
 .technical-indicators {
   display: flex;
   flex-direction: column;
@@ -1026,7 +1033,7 @@ h2 {
   color: #495057;
 }
 
-/* 投資スタイル適性 */
+/* 謚戊ｳ・せ繧ｿ繧､繝ｫ驕ｩ諤ｧ */
 .investment-styles {
   padding: 25px 40px;
   background: #f8f9fa;
@@ -1083,7 +1090,7 @@ h2 {
   font-weight: bold;
 }
 
-/* リスクと機会 */
+/* 繝ｪ繧ｹ繧ｯ縺ｨ讖滉ｼ・*/
 .karte-footer {
   padding: 25px 40px;
   background: #f8f9fa;
@@ -1096,14 +1103,16 @@ h2 {
   gap: 30px;
 }
 
-.risks-section, .opportunities-section {
+.risks-section,
+.opportunities-section {
   background: white;
   padding: 20px;
   border-radius: 8px;
   border: 1px solid #e9ecef;
 }
 
-.risks-section h4, .opportunities-section h4 {
+.risks-section h4,
+.opportunities-section h4 {
   margin: 0 0 15px 0;
   font-size: 16px;
   color: #495057;
@@ -1117,13 +1126,15 @@ h2 {
   color: #28a745;
 }
 
-.risks-section ul, .opportunities-section ul {
+.risks-section ul,
+.opportunities-section ul {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.risks-section li, .opportunities-section li {
+.risks-section li,
+.opportunities-section li {
   padding: 8px 0;
   border-bottom: 1px solid #f8f9fa;
   color: #495057;
@@ -1131,21 +1142,22 @@ h2 {
   line-height: 1.4;
 }
 
-.risks-section li:last-child, .opportunities-section li:last-child {
+.risks-section li:last-child,
+.opportunities-section li:last-child {
   border-bottom: none;
 }
 
 .risks-section li:before {
-  content: "⚠️ ";
+  content: "笞・・";
   margin-right: 8px;
 }
 
 .opportunities-section li:before {
-  content: "🌟 ";
+  content: "検 ";
   margin-right: 8px;
 }
 
-/* 免責事項 */
+/* 蜈崎ｲｬ莠矩・*/
 .disclaimer {
   padding: 20px 40px;
   background: #fff3cd;
@@ -1160,7 +1172,7 @@ h2 {
   line-height: 1.5;
 }
 
-/* 会社概要セクション */
+/* 莨夂､ｾ讎りｦ√そ繧ｯ繧ｷ繝ｧ繝ｳ */
 .company-overview {
   background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
   border: 2px solid #e3e7ff;
@@ -1236,74 +1248,76 @@ h2 {
   text-decoration: underline;
 }
 
-/* レスポンシブ対応 */
+/* 繝ｬ繧ｹ繝昴Φ繧ｷ繝門ｯｾ蠢・*/
 @media (max-width: 768px) {
   .ai-karte-overlay {
     padding: 10px;
   }
-  
+
   .karte-header {
     padding: 20px;
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .header-left h1.stock-title {
     font-size: 24px;
   }
-  
+
   .current-price {
     font-size: 24px;
   }
-  
+
   .price-change {
     font-size: 16px;
   }
-  
+
   .karte-body {
     grid-template-columns: 1fr;
   }
-  
+
   .karte-body .karte-column:first-child .karte-section {
     border-right: none;
     border-bottom: 1px solid #e9ecef;
   }
-  
+
   .karte-section {
     padding: 20px;
   }
-  
+
   .ai-summary {
     padding: 20px;
   }
-  
+
   .ai-confidence {
     position: static;
     display: inline-block;
     margin-bottom: 10px;
   }
-  
+
   .summary-content p {
     padding-right: 0;
   }
-  
+
   .metrics-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .technical-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .styles-container {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .risks-opportunities {
     grid-template-columns: 1fr;
   }
-  
-  .investment-styles, .karte-footer, .disclaimer {
+
+  .investment-styles,
+  .karte-footer,
+  .disclaimer {
     padding: 20px;
   }
 }
@@ -1333,7 +1347,7 @@ h2 {
 .demo-card:hover {
   transform: translateY(-8px);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-  border-color: #4CAF50;
+  border-color: #4caf50;
 }
 
 .demo-card h3 {
@@ -1349,7 +1363,7 @@ h2 {
 }
 
 .demo-button {
-  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -1425,15 +1439,15 @@ h2 {
   .demo-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .features-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .demo-features {
     padding: 25px;
   }
-  
+
   .feature-item {
     padding: 15px;
   }

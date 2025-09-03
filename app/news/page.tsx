@@ -1,11 +1,11 @@
-import UnderDevelopment from '../components/UnderDevelopment';
+﻿import UnderDevelopment from "../components/UnderDevelopment";
 
 export default function NewsPage() {
   return (
     <UnderDevelopment
-      title="市場ニュース"
-      icon="📰"
-      description="AI要約で効率的な情報収集"
+      title="蟶ょｴ繝九Η繝ｼ繧ｹ"
+      icon="堂"
+      description="AI隕∫ｴ・〒蜉ｹ邇・噪縺ｪ諠・ｱ蜿朱寔"
     />
   );
 }

@@ -1,4 +1,4 @@
-.container {
+﻿.container {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
@@ -465,7 +465,7 @@
   color: #666;
 }
 
-/* 認証モーダル */
+/* 隱崎ｨｼ繝｢繝ｼ繝繝ｫ */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -612,7 +612,7 @@
 }
 
 .divider::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: 0;
@@ -648,7 +648,7 @@
 }
 
 .googleButton:hover {
-  border-color: #4285F4;
+  border-color: #4285f4;
   box-shadow: 0 2px 8px rgba(66, 133, 244, 0.2);
 }
 
@@ -691,28 +691,28 @@
   .titleMain {
     font-size: 2.5rem;
   }
-  
+
   .titleSub {
     font-size: 1rem;
   }
-  
+
   .navLinks {
     gap: 1rem;
   }
-  
+
   .cta {
     flex-direction: column;
     align-items: center;
   }
-  
+
   .stats {
     gap: 2rem;
   }
-  
+
   .steps {
     flex-direction: column;
   }
-  
+
   .stepArrow {
     transform: rotate(90deg);
   }

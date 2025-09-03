@@ -1,20 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import openai from "@/app/lib/openai";
 import { checkRateLimit } from "@/app/lib/rateLimiter";
 
-// APIルートハンドラー（段階的分析）
+// API rate limit check and main function
 export async function POST(request: NextRequest) {
   try {
-    // レート制限チェック（IPアドレスまたはユーザーIDベース）
-    const clientId = request.headers.get('x-forwarded-for') || 'anonymous';
+    // Get client IP from headers or use anonymous
+    const clientId = request.headers.get("x-forwarded-for") || "anonymous";
     const rateLimit = checkRateLimit(clientId);
-    
+
     if (!rateLimit.allowed) {
       return NextResponse.json(
-        { 
-          error: "リクエスト制限に達しました",
-          message: `${rateLimit.resetIn}秒後に再試行してください`,
-          resetIn: rateLimit.resetIn 
+        {
+          error: "Rate limit exceeded",
+          message: `Please try again in ${rateLimit.resetIn} seconds`,
+          resetIn: rateLimit.resetIn,
         },
         { status: 429 }
       );
@@ -22,32 +22,32 @@ export async function POST(request: NextRequest) {
 
     const { stockCode, market, step, previousData } = await request.json();
 
-    // 入力検証
+    // Input validation
     if (!stockCode || !market || !step) {
       return NextResponse.json(
-        { error: "必須パラメータが不足しています" },
+        { error: "Required parameters are missing" },
         { status: 400 }
       );
     }
 
-    // ステップに応じた処理
+    // Step-based processing
     switch (step) {
-      case 1: // 企業特定
+      case 1: // Company identification
         return await identifyCompany(stockCode, market);
 
-      case 2: // 株価取得
+      case 2: // Current price retrieval
         if (!previousData?.companyName) {
           return NextResponse.json(
-            { error: "企業名が必要です" },
+            { error: "Company name is missing" },
             { status: 400 }
           );
         }
         return await getCurrentPrice(stockCode, previousData.companyName);
 
-      case 3: // 詳細分析
+      case 3: // Stock analysis
         if (!previousData?.companyName || !previousData?.currentPrice) {
           return NextResponse.json(
-            { error: "企業名と株価が必要です" },
+            { error: "Company name or current price is missing" },
             { status: 400 }
           );
         }
@@ -60,27 +60,26 @@ export async function POST(request: NextRequest) {
 
       default:
         return NextResponse.json(
-          { error: "無効なステップです" },
+          { error: "Invalid step number" },
           { status: 400 }
         );
     }
   } catch (error) {
-    console.error("AI分析エラー:", error);
+    console.error("AI analysis error:", error);
     return NextResponse.json(
-      { error: "AI分析の処理中にエラーが発生しました" },
+      { error: "AI analysis processing failed" },
       { status: 500 }
     );
   }
 }
 
-// ステップ1: 企業を特定
+// Step 1: Company identification
 async function identifyCompany(stockCode: string, market: string) {
   const prompt =
     market === "JP"
-      ? `証券コード${stockCode}の企業はどこですか？正式な企業名を教えてください。簡潔に企業名のみ答えてください。`
-      : `ティッカーシンボル${stockCode}の企業はどこですか？正式な企業名を教えてください。簡潔に企業名のみ答えてください。`;
+      ? `日本株コード${stockCode}の会社は何ですか？会社名のみを回答してください。`
+      : `米国株コード${stockCode}の会社は何ですか？会社名のみを回答してください。`;
 
-  // OpenAI SDKを使用
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -89,25 +88,22 @@ async function identifyCompany(stockCode: string, market: string) {
       max_tokens: 100,
     });
 
-    const companyName = completion.choices[0].message.content || "不明な企業";
+    const companyName =
+      completion.choices[0].message.content || "Unknown company";
     return NextResponse.json({ companyName, step: 1 });
   } catch (error) {
     console.error("OpenAI API error:", error);
     return NextResponse.json(
-      { error: "AI分析サービスに接続できませんでした" },
+      { error: "AI analysis service unavailable" },
       { status: 500 }
     );
   }
 }
 
-// ステップ2: 現在の株価を取得（ChatGPTに聞く）
+// Step 2: Get current price using ChatGPT
 async function getCurrentPrice(stockCode: string, companyName: string) {
-  const prompt = `${companyName}（${stockCode}）について、投資分析の観点から教えてください。
-現在の株価の推定値と、最近の市場動向を簡潔に教えてください。
-注意：実際の投資判断には最新の市場データを確認してください。
-回答例：推定株価3,285円、最近は上昇傾向`;
+  const prompt = `${companyName}（${stockCode}）の現在の株価を教えてください。株価の数値と、前日比の変化率を教えてください。`;
 
-  // OpenAI SDKを使用
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -117,19 +113,19 @@ async function getCurrentPrice(stockCode: string, companyName: string) {
     });
 
     const response = completion.choices[0].message.content || "";
-    // レスポンスから株価と変動率を抽出
+    // Extract price and change from response
     const priceInfo = extractPriceFromText(response);
     return NextResponse.json({ ...priceInfo, step: 2 });
   } catch (error) {
     console.error("OpenAI API error:", error);
     return NextResponse.json(
-      { error: "株価情報の取得に失敗しました" },
+      { error: "Price retrieval failed" },
       { status: 500 }
     );
   }
 }
 
-// ステップ3: 詳細な分析を実行
+// Step 3: Comprehensive stock analysis
 async function analyzeStock(
   stockCode: string,
   companyName: string,
@@ -137,26 +133,22 @@ async function analyzeStock(
   market: string
 ) {
   const prompt = `
-あなたは株式投資の専門アナリストです。${companyName}（${stockCode}）について、ChatGPTの知識を基に詳細な投資分析を行ってください。
+以下の株価情報を基に、ChatGPTの分析能力を活用して包括的な投資判断の分析を行ってください。
 
-【重要】実際の投資判断には最新の市場データの確認が必要です。この分析は参考情報として提供されます。
-
-【分析対象】
-銘柄コード: ${stockCode}
-企業名: ${companyName}
-参考株価: ${currentPrice}円
+株コード: ${stockCode}
+会社名: ${companyName}
+現在価格: ${currentPrice}円
 市場: ${market === "JP" ? "日本株" : "米国株"}
 
-【分析要求】
-1. 企業の事業内容と競争優位性を分析してください
-2. 財務健全性について一般的な業界水準と比較して評価してください
-3. 成長性と将来性について評価してください
-4. 主要なリスクと機会を特定してください
-5. 投資判断の参考となる総合評価を提供してください
+分析項目:
+1. 会社の基本情報と事業内容を分析してください
+2. 業界動向と競合状況を踏まえて評価してください
+3. 財務指標と成長性を分析してください
+4. 投資リスクと機会を特定してください
+5. 投資判断の総合評価を数値化してください
 
-【分析項目と出力形式】
-以下のJSON形式で厳密に出力してください。数値は推定値で構いません。
-
+回答形式:
+以下のJSON形式で回答してください。数値は適切な範囲で設定してください。
 {
   "stockInfo": {
     "code": "${stockCode}",
@@ -167,13 +159,13 @@ async function analyzeStock(
     "lastUpdated": "${new Date().toLocaleString("ja-JP")}"
   },
   "companyOverview": {
-    "business": "企業の主要事業",
-    "description": "企業の詳細説明",
+    "business": "会社の事業内容",
+    "description": "会社の詳細説明",
     "founded": "設立年",
     "employees": 0,
     "headquarters": "本社所在地",
-    "website": "企業サイト",
-    "industry": "業種",
+    "website": "会社URL",
+    "industry": "業界",
     "sector": "セクター"
   },
   "basicMetrics": {
@@ -208,7 +200,7 @@ async function analyzeStock(
   },
   "competitors": [
     {
-      "name": "競合企業名",
+      "name": "競合会社名",
       "score": 0,
       "change": 0
     }
@@ -218,7 +210,7 @@ async function analyzeStock(
     "rsi": 0,
     "sma20": 0,
     "sma50": 0,
-    "volume": "標準",
+    "volume": "平均",
     "volatility": 0
   },
   "investmentStyles": {
@@ -228,13 +220,12 @@ async function analyzeStock(
     "momentum": 0,
     "quality": 0
   },
-  "risks": ["リスク項目1", "リスク項目2"],
-  "opportunities": ["機会項目1", "機会項目2"],
-  "aiSummary": "AIによる総合的な投資判断の要約"
+  "risks": ["リスク要因1", "リスク要因2"],
+  "opportunities": ["機会要因1", "機会要因2"],
+  "aiSummary": "AIによる包括的な投資判断の分析"
 }
 `;
 
-  // OpenAI SDKを使用 (JSON mode)
   try {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -242,7 +233,7 @@ async function analyzeStock(
         {
           role: "system",
           content:
-            "あなたは株式投資の専門アナリストです。JSON形式で正確に回答してください。実際の財務データが不明な場合は、業界平均や一般的な推定値を使用してください。",
+            "あなたは株価分析の専門家です。JSON形式で回答し、適切な数値範囲で設定してください。",
         },
         { role: "user", content: prompt },
       ],
@@ -255,24 +246,21 @@ async function analyzeStock(
     if (!content) {
       throw new Error("No content in OpenAI response");
     }
-    
+
     const analysisResult = JSON.parse(content);
     return NextResponse.json({ ...analysisResult, step: 3 });
   } catch (error) {
     console.error("OpenAI API error:", error);
-    return NextResponse.json(
-      { error: "AI分析の実行に失敗しました" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "AI analysis failed" }, { status: 500 });
   }
 }
 
-// 価格情報をテキストから抽出する補助関数
+// Helper function to extract price information from text
 function extractPriceFromText(text: string): {
   currentPrice: number;
   changePercent: number;
 } {
-  // テキストから数値を抽出する正規表現
+  // Simple regex to extract price and change percentage
   const priceMatch = text.match(/([0-9,]+(?:\.[0-9]+)?)\s*円/);
   const changeMatch = text.match(/([+-]?[0-9]+(?:\.[0-9]+)?)\s*%/);
 
@@ -281,4 +269,3 @@ function extractPriceFromText(text: string): {
     changePercent: changeMatch ? parseFloat(changeMatch[1]) : 0,
   };
 }
-

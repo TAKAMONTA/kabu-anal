@@ -1,4 +1,4 @@
-{
+﻿{
   "permissions": {
     "allow": [
       "Bash(dir:*)",
@@ -20,7 +20,10 @@
       "Bash(npm start)",
       "Bash(curl:*)",
       "Bash(npm i:*)",
-      "Read(C:\\Users\\tnaka\\OneDrive\\Pictures\\Screenshots/**)"
+      "Read(C:\\Users\\tnaka\\OneDrive\\Pictures\\Screenshots/**)",
+      "Bash(git push:*)",
+      "Read(C:\\Users\\tnaka\\OneDrive\\Pictures\\Screenshots/**)",
+      "Read(C:\\Users\\tnaka\\Downloads\\FireShot/**)"
     ],
     "deny": [],
     "ask": []

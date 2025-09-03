@@ -1,29 +1,59 @@
-'use client';
+﻿"use client";
 
-import { useAuth } from './contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import Header from './components/Header';
+import { useAuth } from "./contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import Header from "./components/Header";
 
 export default function Home() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // 認証がない場合はランディングページへリダイレクト
+    // 認証後にユーザーがログインしていない場合はランディングページにリダイレクト
     if (!loading && !user) {
-      router.push('/landing');
+      router.push("/landing");
     }
   }, [user, loading, router]);
 
   const features = [
-    { title: '銘柄AIカルテ', description: 'AIが個別銘柄を徹底分析', icon: '🔍', href: '/karte' },
-    { title: '市場ニュース', description: 'AI要約で効率的な情報収集', icon: '📰', href: '/news' },
-    { title: 'ランキング', description: '条件に合った銘柄を発見', icon: '📊', href: '/ranking' },
-    { title: '学習クイズ', description: '投資知識を楽しく習得', icon: '🧠', href: '/quiz' },
-    { title: 'AIディベート', description: '複数AIによる銘柄分析', icon: '🤖', href: '/ai-debate' },
-    { title: 'アラート', description: '価格変動を自動監視', icon: '🔔', href: '/alerts' },
-  ]
+    {
+      title: "株価AIカード",
+      description: "AIを活用した株価分析のためのツール",
+      icon: "📊",
+      href: "/karte",
+    },
+    {
+      title: "市場ニュース",
+      description: "AI分析で市場動向を把握",
+      icon: "📰",
+      href: "/news",
+    },
+    {
+      title: "ランキング",
+      description: "人気の高い銘柄を表示",
+      icon: "📈",
+      href: "/ranking",
+    },
+    {
+      title: "投資クイズ",
+      description: "投資知識を楽しく学べる",
+      icon: "🧠",
+      href: "/quiz",
+    },
+    {
+      title: "AIディベート",
+      description: "複数AIを活用した株価分析",
+      icon: "🤖",
+      href: "/ai-debate",
+    },
+    {
+      title: "アラート",
+      description: "株価変動の通知設定機能",
+      icon: "🔔",
+      href: "/alerts",
+    },
+  ];
 
   if (loading) {
     return (
@@ -44,10 +74,10 @@ export default function Home() {
     <>
       <Header />
       <main>
-        <h1>株穴 (kabu-ana)</h1>
-        <p className="subtitle">AI×投資情報の新しい形</p>
+        <h1>株価分析 (kabu-ana)</h1>
+        <p className="subtitle">AI株価分析のためのツール</p>
         <div className="status">
-          ✅ ようこそ、{user.displayName || user.email}さん！
+          🎉 ようこそ、{user.displayName || user.email}さん！
         </div>
 
         <h2>機能一覧</h2>
@@ -62,5 +92,5 @@ export default function Home() {
         </div>
       </main>
     </>
-  )
+  );
 }
