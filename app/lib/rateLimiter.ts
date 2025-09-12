@@ -1,4 +1,3 @@
-﻿// 繝ｬ繝ｼ繝亥宛髯千ｮ｡逅・
 interface RateLimitInfo {
   count: number;
   resetTime: number;
@@ -26,7 +25,6 @@ class RateLimiter {
       return true;
     }
 
-    // 繝ｪ繧ｻ繝・ヨ譎る俣繧帝℃縺弱※縺・ｋ蝣ｴ蜷・
     if (now > limitInfo.resetTime) {
       this.limits.set(key, {
         count: 1,
@@ -61,10 +59,8 @@ class RateLimiter {
   }
 }
 
-// 繧ｷ繝ｳ繧ｰ繝ｫ繝医Φ繧､繝ｳ繧ｹ繧ｿ繝ｳ繧ｹ
-export const rateLimiter = new RateLimiter(10, 60000); // 1蛻・俣縺ｫ10繝ｪ繧ｯ繧ｨ繧ｹ繝・
+export const rateLimiter = new RateLimiter(10, 60000); // 1分間に10リクエスト
 
-// 繝ｦ繝ｼ繧ｶ繝ｼ縺斐→縺ｮ繝ｬ繝ｼ繝亥宛髯舌メ繧ｧ繝・け
 export function checkRateLimit(userId: string): {
   allowed: boolean;
   remaining: number;
