@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 繝ｦ繝ｼ繧ｶ繝ｼ諠・ｱ繧巽irestore縺ｫ菫晏ｭ・
+  // ユーザー情報をFirestoreに保存
   const saveUserToFirestore = async (
     user: User,
     isNewUser: boolean = false
