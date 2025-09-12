@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -52,7 +52,7 @@ export default function LoginForm({
 
   const handleForgotPassword = async () => {
     if (!email) {
-      alert("繝｡繝ｼ繝ｫ繧｢繝峨Ξ繧ｹ繧貞・蜉帙＠縺ｦ縺上□縺輔＞");
+      alert("メールアドレスを入力してください");
       return;
     }
 
@@ -188,21 +188,21 @@ export default function LoginForm({
               />
             </svg>
             <span className="text-gray-700 font-medium">
-              {isLoading ? "繝ｭ繧ｰ繧､繝ｳ荳ｭ..." : "Google縺ｧ繝ｭ繧ｰ繧､繝ｳ"}
+              {isLoading ? "ログイン中..." : "Googleでログイン"}
             </span>
           </button>
         </div>
 
         <div className="mt-6 text-center">
           <span className="text-gray-600">
-            繧｢繧ｫ繧ｦ繝ｳ繝医ｒ縺頑戟縺｡縺ｧ縺ｪ縺・婿縺ｯ
+            アカウントをお持ちでない方は
           </span>
           <button
             onClick={onSignUpClick}
             className="ml-1 text-blue-600 hover:text-blue-700 font-medium"
             disabled={isLoading}
           >
-            譁ｰ隕冗匳骭ｲ
+            新規登録
           </button>
         </div>
       </div>

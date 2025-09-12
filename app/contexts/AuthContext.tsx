@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import {
@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           createdAt: serverTimestamp(),
           lastLoginAt: serverTimestamp(),
           subscription: "free",
-          agreedToTerms: isNewUser, // 譁ｰ隕冗匳骭ｲ譎ゅ・蜷梧э貂医∩
+          agreedToTerms: isNewUser, // 新規登録時の同意済み
           agreedToTermsAt: isNewUser ? serverTimestamp() : null,
         });
       } else {
@@ -83,17 +83,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Google隱崎ｨｼ
   const signInWithGoogle = async () => {
     try {
       setError(null);
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      // 譁ｰ隕上Θ繝ｼ繧ｶ繝ｼ縺九←縺・°繧貞愛螳・
       const isNewUser = (result as any)._tokenResponse?.isNewUser || false;
       await saveUserToFirestore(result.user, isNewUser);
     } catch (err: any) {
-      setError(err.message || "Google繧ｵ繧､繝ｳ繧､繝ｳ縺ｫ螟ｱ謨励＠縺ｾ縺励◆");
+      setError(err.message || "Googleサインインに失敗しました");
       throw err;
     }
   };
