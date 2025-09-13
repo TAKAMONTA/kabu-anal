@@ -1,9 +1,9 @@
-﻿import "./globals.css";
+import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
 
 export const metadata = {
   title: "kabu-ana",
-  description: "AIﾃ玲兜雉・ュ蝣ｱ縺ｮ譁ｰ縺励＞蠖｢",
+  description: "AI株式分析の新しい形",
 };
 
 export default function RootLayout({
