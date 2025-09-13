@@ -90,8 +90,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const result = await signInWithPopup(auth, provider);
       const isNewUser = (result as any)._tokenResponse?.isNewUser || false;
       await saveUserToFirestore(result.user, isNewUser);
-    } catch (err: any) {
-      setError(err.message || "Googleサインインに失敗しました");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Googleサインインに失敗しました";
+      setError(errorMessage);
       throw err;
     }
   };
@@ -102,13 +103,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(null);
       const result = await signInWithEmailAndPassword(auth, email, password);
       await saveUserToFirestore(result.user);
-    } catch (err: any) {
-      if (err.code === "auth/invalid-credential") {
-        setError("メールアドレスまたはパスワードが正しくありません");
-      } else if (err.code === "auth/user-not-found") {
-        setError("このメールアドレスは登録されていません");
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const firebaseError = err as { code: string; message?: string };
+        if (firebaseError.code === "auth/invalid-credential") {
+          setError("メールアドレスまたはパスワードが正しくありません");
+        } else if (firebaseError.code === "auth/user-not-found") {
+          setError("このメールアドレスは登録されていません");
+        } else {
+          setError(firebaseError.message || "ログインでエラーが発生しました");
+        }
       } else {
-        setError(err.message || "ログインでエラーが発生しました");
+        setError("ログインでエラーが発生しました");
       }
       throw err;
     }
@@ -135,13 +141,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // 新規登録は初回ログインとして記録
       await saveUserToFirestore(result.user, true);
-    } catch (err: any) {
-      if (err.code === "auth/email-already-in-use") {
-        setError("このメールアドレスは既に使用されています");
-      } else if (err.code === "auth/weak-password") {
-        setError("パスワードは6文字以上で設定してください");
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const firebaseError = err as { code: string; message?: string };
+        if (firebaseError.code === "auth/email-already-in-use") {
+          setError("このメールアドレスは既に使用されています");
+        } else if (firebaseError.code === "auth/weak-password") {
+          setError("パスワードは6文字以上で設定してください");
+        } else {
+          setError(firebaseError.message || "登録でエラーが発生しました");
+        }
       } else {
-        setError(err.message || "登録でエラーが発生しました");
+        setError("登録でエラーが発生しました");
       }
       throw err;
     }
@@ -152,8 +163,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setError(null);
       await signOut(auth);
-    } catch (err: any) {
-      setError(err.message || "ログアウトでエラーが発生しました");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "ログアウトでエラーが発生しました";
+      setError(errorMessage);
       throw err;
     }
   };
@@ -163,13 +175,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setError(null);
       await sendPasswordResetEmail(auth, email);
-    } catch (err: any) {
-      if (err.code === "auth/user-not-found") {
-        setError("このメールアドレスは登録されていません");
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'code' in err) {
+        const firebaseError = err as { code: string; message?: string };
+        if (firebaseError.code === "auth/user-not-found") {
+          setError("このメールアドレスは登録されていません");
+        } else {
+          setError(
+            firebaseError.message || "パスワードリセットメールの送信でエラーが発生しました"
+          );
+        }
       } else {
-        setError(
-          err.message || "パスワードリセットメールの送信でエラーが発生しました"
-        );
+        setError("パスワードリセットメールの送信でエラーが発生しました");
       }
       throw err;
     }

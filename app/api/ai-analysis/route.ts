@@ -1,32 +1,56 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import openai from "@/app/lib/openai";
 import { checkRateLimit } from "@/app/lib/rateLimiter";
+import { validateRequestBody, validateStockCode, validateMarket, validateStep, rateLimitHeaders } from "@/app/lib/validation";
+import { validateEnvironmentKeys } from "@/app/lib/apiValidation";
+import type { StockAnalysisRequest, APIResponse } from "@/app/types";
 
 // API rate limit check and main function
 export async function POST(request: NextRequest) {
   try {
-    // Get client IP from headers or use anonymous
-    const clientId = request.headers.get("x-forwarded-for") || "anonymous";
-    const rateLimit = checkRateLimit(clientId);
-
-    if (!rateLimit.allowed) {
+    const body = await request.json();
+    
+    const validation = validateRequestBody(body, ['stockCode', 'market', 'step']);
+    if (!validation.valid) {
       return NextResponse.json(
-        {
-          error: "Rate limit exceeded",
-          message: `Please try again in ${rateLimit.resetIn} seconds`,
-          resetIn: rateLimit.resetIn,
-        },
-        { status: 429 }
+        { success: false, error: validation.errors.join(', ') },
+        { status: 400 }
       );
     }
 
-    const { stockCode, market, step, previousData } = await request.json();
+    const { stockCode, market, step, previousData } = body as StockAnalysisRequest;
 
-    // Input validation
-    if (!stockCode || !market || !step) {
+    if (!validateStockCode(stockCode)) {
       return NextResponse.json(
-        { error: "Required parameters are missing" },
+        { success: false, error: "Invalid stock code format" },
         { status: 400 }
+      );
+    }
+
+    if (!validateMarket(market)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid market. Must be JP or US" },
+        { status: 400 }
+      );
+    }
+
+    if (!validateStep(step)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid step. Must be 1, 2, or 3" },
+        { status: 400 }
+      );
+    }
+
+    const clientIP = request.ip || "unknown";
+    const rateLimit = checkRateLimit(clientIP);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { success: false, error: "Rate limit exceeded. Please try again later." },
+        { 
+          status: 429,
+          headers: rateLimitHeaders(rateLimit.remaining, rateLimit.resetIn)
+        }
       );
     }
 
@@ -64,10 +88,11 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("AI analysis error:", error);
+    const errorMessage = error instanceof Error ? error.message : "AI analysis processing failed";
     return NextResponse.json(
-      { error: "AI analysis processing failed" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -75,11 +100,10 @@ export async function POST(request: NextRequest) {
 
 // Step 1: Company identification
 async function identifyCompany(stockCode: string, market: string) {
-  // Check if OpenAI API key is available
-  if (!process.env.OPENAI_API_KEY) {
-    console.error("OpenAI API key is not configured");
+  const envValidation = validateEnvironmentKeys();
+  if (!envValidation.valid) {
     return NextResponse.json(
-      { error: "AI service configuration error" },
+      { success: false, error: "Server configuration error" },
       { status: 500 }
     );
   }
@@ -100,10 +124,11 @@ async function identifyCompany(stockCode: string, market: string) {
     const companyName =
       completion.choices[0].message.content || "Unknown company";
     return NextResponse.json({ companyName, step: 1 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("OpenAI API error:", error);
+    const errorMessage = error instanceof Error ? error.message : "AI analysis service unavailable";
     return NextResponse.json(
-      { error: "AI analysis service unavailable" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -125,10 +150,11 @@ async function getCurrentPrice(stockCode: string, companyName: string) {
     // Extract price and change from response
     const priceInfo = extractPriceFromText(response);
     return NextResponse.json({ ...priceInfo, step: 2 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("OpenAI API error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Price retrieval failed";
     return NextResponse.json(
-      { error: "Price retrieval failed" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
@@ -258,9 +284,10 @@ async function analyzeStock(
 
     const analysisResult = JSON.parse(content);
     return NextResponse.json({ ...analysisResult, step: 3 });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("OpenAI API error:", error);
-    return NextResponse.json({ error: "AI analysis failed" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "AI analysis failed";
+    return NextResponse.json({ success: false, error: errorMessage }, { status: 500 });
   }
 }
 

@@ -1,41 +1,50 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import openai from "@/app/lib/openai";
+import { validateRequestBody, validateStockCode, rateLimitHeaders } from "@/app/lib/validation";
+import { validateEnvironmentKeys } from "@/app/lib/apiValidation";
 import { checkRateLimit } from "@/app/lib/rateLimiter";
+import type { APIResponse } from "@/app/types";
 
 // OpenAIを使用した株価分析
 export async function POST(request: NextRequest) {
   try {
-    // Check if OpenAI API key is available
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("OpenAI API key is not configured");
+    const body = await request.json();
+    
+    const validation = validateRequestBody(body, ['stockCode', 'companyInfo']);
+    if (!validation.valid) {
       return NextResponse.json(
-        { error: "AI service configuration error" },
-        { status: 500 }
+        { success: false, error: validation.errors.join(', ') },
+        { status: 400 }
       );
     }
 
-    // レート制限チェック
-    const clientId = request.headers.get("x-forwarded-for") || "anonymous";
-    const rateLimit = checkRateLimit(clientId);
+    const { stockCode, companyInfo, priceInfo } = body;
+
+    if (!validateStockCode(stockCode)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid stock code format" },
+        { status: 400 }
+      );
+    }
+
+    const clientIP = request.ip || "unknown";
+    const rateLimit = checkRateLimit(clientIP);
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
-        {
-          error: "Rate limit exceeded",
-          message: `Please try again in ${rateLimit.resetIn} seconds`,
-          resetIn: rateLimit.resetIn,
-        },
-        { status: 429 }
+        { success: false, error: "Rate limit exceeded. Please try again later." },
+        { 
+          status: 429,
+          headers: rateLimitHeaders(rateLimit.remaining, rateLimit.resetIn)
+        }
       );
     }
 
-    const { stockCode, companyInfo, priceInfo } = await request.json();
-
-    // 入力検証
-    if (!stockCode || !companyInfo) {
+    const envValidation = validateEnvironmentKeys();
+    if (!envValidation.valid) {
       return NextResponse.json(
-        { error: "株コードまたは会社情報が不足しています" },
-        { status: 400 }
+        { success: false, error: "Server configuration error" },
+        { status: 500 }
       );
     }
 
@@ -135,14 +144,18 @@ ${JSON.stringify(priceInfo, null, 2)}
     console.log("Analysis completed:", analysis.summary);
 
     return NextResponse.json({
-      stockCode,
-      analysis,
-      timestamp: new Date().toISOString(),
+      success: true,
+      data: {
+        stockCode,
+        analysis,
+        timestamp: new Date().toISOString(),
+      }
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Stock analysis error:", error);
+    const errorMessage = error instanceof Error ? error.message : "分析処理でエラーが発生しました";
     return NextResponse.json(
-      { error: "分析処理でエラーが発生しました" },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
