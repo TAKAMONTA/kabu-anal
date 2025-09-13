@@ -189,17 +189,14 @@ const callAPI = async (prompt: string) => {
 };
 
 // 企業名を抽出するヘルパー関数
-const extractCompanyName = (response: any): string => {
-  // APIレスポンスから企業名を抽出
-  // 例: "トヨタ自動車株式会社" や "Apple Inc." など
+const extractCompanyName = (response: { companyName?: string }): string => {
   return response.companyName || "";
 };
 
 // 株価情報を抽出するヘルパー関数
 const extractPriceInfo = (
-  response: any
+  response: { price?: number; change?: number }
 ): { currentPrice: number; changePercent: number } => {
-  // APIレスポンスから株価と変化率を抽出
   return {
     currentPrice: response.price || 0,
     changePercent: response.change || 0,
@@ -208,7 +205,6 @@ const extractPriceInfo = (
 
 // 分析レスポンスをパースするヘルパー関数
 const parseAnalysisResponse = (response: any) => {
-  // JSON文字列を分析レスポンスに変換
   try {
     if (typeof response === "string") {
       return JSON.parse(response);
@@ -221,8 +217,7 @@ const parseAnalysisResponse = (response: any) => {
 };
 
 // レスポンス検証のヘルパー関数
-export const validateAIResponse = (response: any): boolean => {
-  // 必須フィールドの存在確認
+export const validateAIResponse = (response: Record<string, any>): boolean => {
   const requiredFields = [
     "stockInfo",
     "companyOverview",
@@ -245,7 +240,6 @@ export const validateAIResponse = (response: any): boolean => {
     }
   }
 
-  // 数値範囲の検証
   if (
     typeof response.aiScores.totalScore !== "number" ||
     response.aiScores.totalScore < 0 ||
@@ -255,14 +249,12 @@ export const validateAIResponse = (response: any): boolean => {
     return false;
   }
 
-  // センチメント値の検証
   const validSentiments = ["bullish", "neutral", "bearish"];
   if (!validSentiments.includes(response.marketSentiment.sentiment)) {
     console.error("Invalid sentiment value");
     return false;
   }
 
-  // トレンド値の検証
   const validTrends = ["uptrend", "sideways", "downtrend"];
   if (!validTrends.includes(response.technicalIndicators.trend)) {
     console.error("Invalid trend value");

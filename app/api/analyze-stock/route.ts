@@ -274,12 +274,13 @@ ${previousData ? JSON.stringify(previousData, null, 2) : "情報がありませ�
           { status: 400 }
         );
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Analysis error:", error);
+    const errorMessage = error instanceof Error ? error.message : "分析処理でエラーが発生しました";
     return NextResponse.json(
       {
         success: false,
-        error: "分析処理でエラーが発生しました",
+        error: errorMessage,
         details: error instanceof Error ? error.message : "不明なエラー",
       },
       { status: 500 }

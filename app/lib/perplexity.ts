@@ -1,4 +1,4 @@
-﻿// Perplexity API 繧ｯ繝ｩ繧､繧｢繝ｳ繝郁ｨｭ螳・
+// Perplexity API クライアント設定
 
 interface PerplexitySearchRequest {
   query: string;
@@ -118,9 +118,10 @@ class PerplexityClient {
         stockPrice: this.extractStockPrice(content),
         marketTrend: this.extractMarketTrend(content),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Perplexity search error:", error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      throw new Error(`Perplexity search failed: ${errorMessage}`);
     }
   }
 
@@ -138,7 +139,6 @@ class PerplexityClient {
   }
 }
 
-// 繧ｷ繝ｳ繧ｰ繝ｫ繝医Φ繧､繝ｳ繧ｹ繧ｿ繝ｳ繧ｹ
 let perplexityClient: PerplexityClient | null = null;
 
 export function getPerplexityClient(): PerplexityClient {

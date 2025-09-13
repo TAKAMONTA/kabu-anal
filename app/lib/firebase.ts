@@ -39,14 +39,17 @@ export const signUp = async (email: string, password: string) => {
       password
     );
     return { success: true, user: userCredential.user };
-  } catch (error: any) {
+  } catch (error: unknown) {
     let errorMessage = "Registration failed";
-    if (error.code === "auth/email-already-in-use") {
-      errorMessage = "This email is already registered";
-    } else if (error.code === "auth/weak-password") {
-      errorMessage = "Password should be at least 6 characters";
-    } else if (error.code === "auth/invalid-email") {
-      errorMessage = "Invalid email address";
+    if (error && typeof error === 'object' && 'code' in error) {
+      const firebaseError = error as { code: string };
+      if (firebaseError.code === "auth/email-already-in-use") {
+        errorMessage = "This email is already registered";
+      } else if (firebaseError.code === "auth/weak-password") {
+        errorMessage = "Password should be at least 6 characters";
+      } else if (firebaseError.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      }
     }
     return { success: false, error: errorMessage };
   }
@@ -60,14 +63,17 @@ export const signIn = async (email: string, password: string) => {
       password
     );
     return { success: true, user: userCredential.user };
-  } catch (error: any) {
+  } catch (error: unknown) {
     let errorMessage = "Login failed";
-    if (error.code === "auth/user-not-found") {
-      errorMessage = "User not found";
-    } else if (error.code === "auth/wrong-password") {
-      errorMessage = "Incorrect password";
-    } else if (error.code === "auth/invalid-email") {
-      errorMessage = "Invalid email address";
+    if (error && typeof error === 'object' && 'code' in error) {
+      const firebaseError = error as { code: string };
+      if (firebaseError.code === "auth/user-not-found") {
+        errorMessage = "User not found";
+      } else if (firebaseError.code === "auth/wrong-password") {
+        errorMessage = "Incorrect password";
+      } else if (firebaseError.code === "auth/invalid-email") {
+        errorMessage = "Invalid email address";
+      }
     }
     return { success: false, error: errorMessage };
   }
@@ -77,8 +83,9 @@ export const logout = async () => {
   try {
     await signOut(auth);
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Logout failed";
+    return { success: false, error: errorMessage };
   }
 };
 

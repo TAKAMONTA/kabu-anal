@@ -1,4 +1,5 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { APIResponse } from "@/app/types";
 
 // AI分析による人気株のサンプルデータ
 const TRENDING_STOCKS = {
@@ -40,11 +41,13 @@ export async function GET() {
       data: TRENDING_STOCKS,
       lastUpdated: new Date().toISOString(),
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error("Trending stocks error:", error);
+    const errorMessage = error instanceof Error ? error.message : "人気株の取得でエラーが発生しました";
     return NextResponse.json(
       {
         success: false,
-        error: "人気株の取得でエラーが発生しました",
+        error: errorMessage,
       },
       { status: 500 }
     );

@@ -94,12 +94,13 @@ export async function POST(request: NextRequest) {
       ],
       rawContent: searchContent,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Stock search error:", error);
+    const errorMessage = error instanceof Error ? error.message : "検索処理でエラーが発生しました";
     return NextResponse.json(
       {
         success: false,
-        error: "検索処理でエラーが発生しました",
+        error: errorMessage,
       },
       { status: 500 }
     );
@@ -108,7 +109,14 @@ export async function POST(request: NextRequest) {
 
 // 株価情報を抽出する関数
 function extractPriceInfo(content: string) {
-  const priceInfo: any = {
+  const priceInfo: {
+    currentPrice: string | null;
+    previousClose: string | null;
+    change: string | null;
+    changePercent: string | null;
+    volume: string | null;
+    currency: string | null;
+  } = {
     currentPrice: null,
     previousClose: null,
     change: null,
