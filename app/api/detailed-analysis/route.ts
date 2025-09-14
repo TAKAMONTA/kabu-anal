@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkRateLimitAsync } from "@/app/lib/rateLimiter";
+import { checkRateLimit } from "@/app/lib/rateLimiter";
 import openai from "@/app/lib/openai";
 
 // シンプルな詳細分析 API エンドポイント
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   try {
     // レート制限チェック
     const clientId = request.headers.get("x-forwarded-for") || "anonymous";
-    const rateLimit = await checkRateLimitAsync(clientId);
+    const rateLimit = checkRateLimit(clientId);
 
     if (!rateLimit.allowed) {
       return NextResponse.json(

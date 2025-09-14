@@ -143,13 +143,13 @@ const CurrentPerformanceSection: React.FC<{ analysisData: AIAnalysisData }> = ({
             EPSや売上の記録更新を受けて機関・個人投資家の間でも注目されています。
             現在の株価は
             <HighlightNumber
-              value={stockInfo.price}
+              value={stockInfo.price || 0}
               unit={stockInfo.market === "US" ? "$" : "円"}
             />
             で、
-            {stockInfo.changePercent > 0 ? "上昇" : "下落"}幅
+            {(stockInfo.changePercent || 0) > 0 ? "上昇" : "下落"}幅
             <HighlightNumber
-              value={Math.abs(stockInfo.changePercent)}
+              value={Math.abs(stockInfo.changePercent || 0)}
               unit="%"
             />
             となっています。
@@ -206,14 +206,14 @@ const InstitutionalTrendsSection: React.FC<{
           </h4>
           <p className="text-gray-700 text-base leading-relaxed">
             機関投資家の保有比率は高く、
-            {marketSentiment.institutionalFlow > 0
+            {(marketSentiment.institutionalFlow || 0) > 0
               ? "資金流入が続いている"
-              : marketSentiment.institutionalFlow < 0
+              : (marketSentiment.institutionalFlow || 0) < 0
                 ? "資金流出が見られる"
                 : "資金動向は安定"}
             一方、 一部の資産運用会社は
             {basicMetrics.per > 25 ? "バリュエーション" : "業績"}を警戒して
-            {marketSentiment.institutionalFlow < 0 ? "売却" : "調整"}
+            {(marketSentiment.institutionalFlow || 0) < 0 ? "売却" : "調整"}
             しています。 市場評価は「
             {marketSentiment.sentiment === "bullish"
               ? "強気"
@@ -243,7 +243,7 @@ const InstitutionalTrendsSection: React.FC<{
                 ? "中程度評価"
                 : "低評価"}
             。 アナリスト評価
-            <HighlightNumber value={marketSentiment.analystRating} unit="/5" />
+            <HighlightNumber value={marketSentiment.analystRating || 0} unit="/5" />
             。
           </p>
         </div>
@@ -387,7 +387,7 @@ const IndividualMarketForecastSection: React.FC<{
           </h4>
           <p className="text-gray-700 text-base leading-relaxed">
             {companyOverview?.industry || "業界"}の"安定した需要"は長期の味方。
-            {analysisData.risks?.length > 0 ? "リスク要因" : "市場変動"}
+            {(analysisData.risks?.length || 0) > 0 ? "リスク要因" : "市場変動"}
             は読みにくい。 ポジションは段階的に、
             {technicalIndicators?.trend === "uptrend" ? "上昇時" : "調整時"}
             はサイズ調整を意識。

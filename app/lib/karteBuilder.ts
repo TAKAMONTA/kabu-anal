@@ -219,6 +219,7 @@ export function buildAIKarteData(
       market,
       currency: market === "JP" ? "JPY" : "USD",
       lastUpdated: new Date().toLocaleString("ja-JP"),
+      dataSource: "AI Analysis",
     },
     companyOverview: {
       business: data.companyOverview
