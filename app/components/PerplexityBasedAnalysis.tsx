@@ -19,7 +19,10 @@ function formatPrice(price: number | undefined, currency: string): string {
 }
 
 // 変動フォーマット関数
-function formatChange(change: number | undefined, changePercent: number | undefined): string {
+function formatChange(
+  change: number | undefined,
+  changePercent: number | undefined
+): string {
   if (change === undefined || changePercent === undefined) return "N/A";
   const sign = change >= 0 ? "+" : "";
   return `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
@@ -55,7 +58,9 @@ export default function PerplexityBasedAnalysis({
                 analysisData.stockInfo.currency
               )}
             </div>
-            <div className={`text-lg font-semibold ${getChangeColor(analysisData.stockInfo.change)}`}>
+            <div
+              className={`text-lg font-semibold ${getChangeColor(analysisData.stockInfo.change)}`}
+            >
               {formatChange(
                 analysisData.stockInfo.change,
                 analysisData.stockInfo.changePercent
@@ -64,7 +69,8 @@ export default function PerplexityBasedAnalysis({
           </div>
         </div>
         <div className="text-sm text-gray-500">
-          最終更新: {new Date(analysisData.stockInfo.lastUpdated).toLocaleString("ja-JP")}
+          最終更新:{" "}
+          {new Date(analysisData.stockInfo.lastUpdated).toLocaleString("ja-JP")}
         </div>
       </div>
 
@@ -75,7 +81,10 @@ export default function PerplexityBasedAnalysis({
           {/* 投資スコア */}
           <div className="text-center">
             <div className="relative w-20 h-20 mx-auto mb-3">
-              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+              <svg
+                className="w-20 h-20 transform -rotate-90"
+                viewBox="0 0 36 36"
+              >
                 <path
                   className="text-gray-200"
                   strokeWidth="3"
@@ -103,7 +112,10 @@ export default function PerplexityBasedAnalysis({
           {/* 成長予測 */}
           <div className="text-center">
             <div className="relative w-20 h-20 mx-auto mb-3">
-              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+              <svg
+                className="w-20 h-20 transform -rotate-90"
+                viewBox="0 0 36 36"
+              >
                 <path
                   className="text-gray-200"
                   strokeWidth="3"
@@ -131,7 +143,10 @@ export default function PerplexityBasedAnalysis({
           {/* リスク評価 */}
           <div className="text-center">
             <div className="relative w-20 h-20 mx-auto mb-3">
-              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+              <svg
+                className="w-20 h-20 transform -rotate-90"
+                viewBox="0 0 36 36"
+              >
                 <path
                   className="text-gray-200"
                   strokeWidth="3"
@@ -159,7 +174,10 @@ export default function PerplexityBasedAnalysis({
           {/* AI信頼度 */}
           <div className="text-center">
             <div className="relative w-20 h-20 mx-auto mb-3">
-              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 36 36">
+              <svg
+                className="w-20 h-20 transform -rotate-90"
+                viewBox="0 0 36 36"
+              >
                 <path
                   className="text-gray-200"
                   strokeWidth="3"
@@ -198,7 +216,9 @@ export default function PerplexityBasedAnalysis({
 
           {/* 事業内容 */}
           <div className="border-l-4 border-green-500 pl-4">
-            <h4 className="text-lg font-semibold text-gray-800 mb-2">事業内容</h4>
+            <h4 className="text-lg font-semibold text-gray-800 mb-2">
+              事業内容
+            </h4>
             <p className="text-gray-700 leading-relaxed">
               世界最大級の自動車メーカーとして、幅広い自動車製品の設計・製造・販売を行っています。
               ハイブリッド車や電気自動車（EV）の開発にも積極的に取り組んでおり、環境に配慮した
@@ -208,38 +228,54 @@ export default function PerplexityBasedAnalysis({
 
           {/* 財務ハイライト */}
           <div className="border-l-4 border-purple-500 pl-4">
-            <h4 className="text-lg font-semibold text-gray-800 mb-2">財務ハイライト</h4>
+            <h4 className="text-lg font-semibold text-gray-800 mb-2">
+              財務ハイライト
+            </h4>
             <div className="space-y-2">
               <div className="flex items-center">
                 <span className="w-2 h-2 bg-green-400 rounded-full mr-3"></span>
-                <span className="text-gray-700">2024年3月期連結純利益: 過去最高の約3兆9,500億円を見込み</span>
+                <span className="text-gray-700">
+                  2024年3月期連結純利益: 過去最高の約3兆9,500億円を見込み
+                </span>
               </div>
               <div className="flex items-center">
                 <span className="w-2 h-2 bg-blue-400 rounded-full mr-3"></span>
-                <span className="text-gray-700">2023年年間生産台数: 過去最高を更新</span>
+                <span className="text-gray-700">
+                  2023年年間生産台数: 過去最高を更新
+                </span>
               </div>
               <div className="flex items-center">
                 <span className="w-2 h-2 bg-purple-400 rounded-full mr-3"></span>
-                <span className="text-gray-700">グループ構成: 連結子会社約507社、主要子会社57社</span>
+                <span className="text-gray-700">
+                  グループ構成: 連結子会社約507社、主要子会社57社
+                </span>
               </div>
             </div>
           </div>
 
           {/* 競争優位性 */}
           <div className="border-l-4 border-orange-500 pl-4">
-            <h4 className="text-lg font-semibold text-gray-800 mb-2">競争優位性</h4>
+            <h4 className="text-lg font-semibold text-gray-800 mb-2">
+              競争優位性
+            </h4>
             <div className="space-y-2">
               <div className="flex items-center">
                 <span className="w-2 h-2 bg-orange-400 rounded-full mr-3"></span>
-                <span className="text-gray-700">テスラを上回る規模の生産能力</span>
+                <span className="text-gray-700">
+                  テスラを上回る規模の生産能力
+                </span>
               </div>
               <div className="flex items-center">
                 <span className="w-2 h-2 bg-orange-400 rounded-full mr-3"></span>
-                <span className="text-gray-700">ESG・サステナビリティへの積極的取り組み</span>
+                <span className="text-gray-700">
+                  ESG・サステナビリティへの積極的取り組み
+                </span>
               </div>
               <div className="flex items-center">
                 <span className="w-2 h-2 bg-orange-400 rounded-full mr-3"></span>
-                <span className="text-gray-700">国際統合報告フレームワークに基づく透明性の高い情報開示</span>
+                <span className="text-gray-700">
+                  国際統合報告フレームワークに基づく透明性の高い情報開示
+                </span>
               </div>
             </div>
           </div>

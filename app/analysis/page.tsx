@@ -168,9 +168,7 @@ function AnalysisContent() {
               </svg>
               戻る
             </button>
-            <h1 className="text-xl font-semibold text-gray-800">
-              AI分析結果
-            </h1>
+            <h1 className="text-xl font-semibold text-gray-800">AI分析結果</h1>
             <div className="w-20"></div>
           </div>
         </div>

@@ -264,12 +264,7 @@ async function runAnalysisFlow(
       steps[2].endTime = new Date().toISOString();
 
       // 統合データの構築
-      return buildAnalysisData(
-        query,
-        market,
-        aggregatedData,
-        analysisData
-      );
+      return buildAnalysisData(query, market, aggregatedData, analysisData);
     }
   } catch (error) {
     // エラーが発生したステップをマーク
