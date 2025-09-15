@@ -7,8 +7,15 @@ export default function KartePage() {
   return (
     <ProtectedRoute>
       <main>
-        <h1>📊 株価AI分析</h1>
-        <p className="subtitle">AIを活用した株価分析のためのツール</p>
+        <header className="karte-header">
+          <div className="header-icons">
+            <span className="icon blue">📊</span>
+            <span className="icon green">📈</span>
+            <span className="icon pink">📉</span>
+          </div>
+          <h1>株価AI分析</h1>
+          <p className="subtitle">AIを活用した株価分析のためのツール</p>
+        </header>
 
         {/* 4コマ漫画風の使い方説明 */}
         <div className="manga-guide">
