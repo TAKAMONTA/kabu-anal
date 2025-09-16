@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import * as cheerio from "cheerio";
 import {
   FinanceApiResponse,
   FinanceDataPoint,
@@ -38,13 +37,8 @@ async function fetchYahooChart(symbol: string) {
 
 async function fetchFinanceData(symbol: string): Promise<FinanceDataPoint[]> {
   try {
-    // Yahoo Finance Japan の財務情報ページをスクレイピング
-    const url = `https://finance.yahoo.co.jp/quote/${symbol}/profile`;
-    const res = await fetch(url, { cache: "no-store" });
-    const html = await res.text();
-
     // 実際のスクレイピング処理は省略し、ダミーデータを生成
-    // const $ = cheerio.load(html); // 未使用のため削除
+    // 将来的にYahoo Finance Japanの財務情報ページから取得予定
 
     // 年度ごとの財務データを生成（実際のスクレイピングの代わりにダミーデータ）
     const currentYear = new Date().getFullYear();

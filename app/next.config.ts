@@ -4,13 +4,6 @@ const nextConfig: NextConfig = {
   // Vercel互換性のための設定
   output: "standalone",
 
-  // Turbopack設定（開発環境用）
-  experimental: {
-    turbopack: {
-      root: __dirname, // ルートを明示
-    },
-  },
-
   // API Routes の設定
   async rewrites() {
     return [
