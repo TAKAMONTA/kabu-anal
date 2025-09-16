@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import {
+  FinanceApiResponse,
+  FinanceDataPoint,
+  ApiError,
+} from "@/app/types/api";
 
 // 全角→半角変換
 function normalizeInput(input: string): string {
@@ -31,17 +36,19 @@ async function fetchYahooChart(symbol: string) {
   return { labels, prices: closes, volumes, currency };
 }
 
-async function fetchFinanceData(symbol: string) {
+async function fetchFinanceData(symbol: string): Promise<FinanceDataPoint[]> {
   try {
     // Yahoo Finance Japan の財務情報ページをスクレイピング
     const url = `https://finance.yahoo.co.jp/quote/${symbol}/profile`;
     const res = await fetch(url, { cache: "no-store" });
     const html = await res.text();
-    const $ = cheerio.load(html);
+
+    // 実際のスクレイピング処理は省略し、ダミーデータを生成
+    // const $ = cheerio.load(html); // 未使用のため削除
 
     // 年度ごとの財務データを生成（実際のスクレイピングの代わりにダミーデータ）
     const currentYear = new Date().getFullYear();
-    const financeData = [];
+    const financeData: FinanceDataPoint[] = [];
 
     for (let i = 0; i < 5; i++) {
       const year = currentYear - i;
@@ -61,7 +68,7 @@ async function fetchFinanceData(symbol: string) {
     }
 
     return financeData.reverse(); // 古い年度から新しい年度順に
-  } catch (error) {
+  } catch {
     // エラー時は空配列を返す
     return [];
   }
@@ -91,7 +98,7 @@ export async function GET(req: Request) {
       fetchFinanceData(symbol),
     ]);
 
-    return NextResponse.json({
+    const response: FinanceApiResponse = {
       symbol,
       price: stockData.prices[stockData.prices.length - 1],
       currency: stockData.currency,
@@ -99,11 +106,15 @@ export async function GET(req: Request) {
       prices: stockData.prices,
       volumes: stockData.volumes,
       financeHistory: financeData,
-    });
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: e.message || "データ取得に失敗しました" },
-      { status: 500 }
-    );
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    const errorResponse: ApiError = {
+      error:
+        error instanceof Error ? error.message : "データ取得に失敗しました",
+    };
+
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }

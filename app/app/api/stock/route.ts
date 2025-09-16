@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { StockApiResponse, ApiError } from "@/app/types/api";
 
 // 全角→半角変換
 function normalizeInput(input: string): string {
@@ -49,17 +50,20 @@ export async function GET(req: Request) {
 
     const { labels, prices, currency } = await fetchYahooChart(symbol);
 
-    return NextResponse.json({
+    const response: StockApiResponse = {
       symbol,
       price: prices[prices.length - 1],
       currency,
       labels,
       prices,
-    });
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: e.message || "株価取得に失敗しました" },
-      { status: 500 }
-    );
+    };
+
+    return NextResponse.json(response);
+  } catch (error) {
+    const errorResponse: ApiError = {
+      error: error instanceof Error ? error.message : "株価取得に失敗しました",
+    };
+
+    return NextResponse.json(errorResponse, { status: 500 });
   }
 }
