@@ -1,0 +1,14 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-console": "warn",
+    "prefer-const": "error",
+    "no-var": "error",
+    "no-duplicate-imports": "error",
+    "no-unused-expressions": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/no-unescaped-entities": "off",
+    "react/display-name": "off"
+  }
+}
