@@ -1,139 +1,72 @@
-﻿"use client";
-
-import React, { useCallback } from "react";
 import Link from "next/link";
-import { useAuth } from "../contexts/AuthContext";
-import { useRouter } from "next/navigation";
-import type { User } from "../types";
 
-interface HeaderProps {
-  className?: string;
-}
-
-interface UserDisplayProps {
-  user: User;
-  onLogout: () => Promise<void>;
-}
-
-interface NavigationItem {
-  href: string;
-  label: string;
-}
-
-const navigationItems: NavigationItem[] = [
-  { href: "/karte", label: "AIカード" },
-  { href: "/dashboard", label: "ダッシュボード" },
-  { href: "/news", label: "ニュース" },
-  { href: "/ranking", label: "ランキング" },
-];
-
-const UserDisplay: React.FC<UserDisplayProps> = ({ user, onLogout }) => {
-  const getInitials = useCallback((user: User): string => {
-    if (user.displayName) {
-      return user.displayName[0].toUpperCase();
-    }
-    if (user.email) {
-      return user.email[0].toUpperCase();
-    }
-    return "U";
-  }, []);
-
+export default function Header() {
   return (
-    <div className="flex items-center space-x-4">
-      <div className="flex items-center space-x-2">
-        {user.photoURL ? (
-          <img
-            src={user.photoURL}
-            alt={user.displayName || "User"}
-            className="w-8 h-8 rounded-full"
-          />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium">
-            {getInitials(user)}
-          </div>
-        )}
-        <span className="text-sm text-gray-700 hidden sm:block">
-          {user.displayName || user.email}
-        </span>
-      </div>
-      <button
-        onClick={onLogout}
-        className="text-sm text-gray-600 hover:text-gray-900 transition"
-        type="button"
-      >
-        ログアウト
-      </button>
-    </div>
-  );
-};
-
-const Navigation: React.FC = () => (
-  <nav className="hidden md:flex items-center space-x-6">
-    {navigationItems.map(item => (
-      <Link
-        key={item.href}
-        href={item.href}
-        className="text-gray-600 hover:text-gray-900 transition"
-      >
-        {item.label}
-      </Link>
-    ))}
-  </nav>
-);
-
-const GuestActions: React.FC = () => (
-  <div className="flex items-center space-x-4">
-    <Link
-      href="/login"
-      className="text-sm text-gray-600 hover:text-gray-900 transition"
-    >
-      ログイン
-    </Link>
-    <Link
-      href="/login"
-      className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-    >
-      新規登録
-    </Link>
-  </div>
-);
-
-export default function Header({ className = "" }: HeaderProps) {
-  const { user, logout } = useAuth();
-  const router = useRouter();
-
-  const handleLogout = useCallback(async (): Promise<void> => {
-    try {
-      await logout();
-      router.push("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  }, [logout, router]);
-
-  return (
-    <header
-      className={`bg-white shadow-sm border-b border-gray-200 ${className}`}
-    >
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* ロゴ */}
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl">📊</span>
-            <span className="text-xl font-bold text-gray-900">
-              株価分析AIカード
-            </span>
+    <header className="ukiyoe-header ukiyoe-header-gradient relative">
+      <div className="ukiyoe-pattern-overlay" />
+      <div className="container mx-auto px-4 py-5 relative z-10">
+        <div className="flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-2xl font-bold text-[#fff8dc] hover:text-[#d4af37] transition-colors flex items-center gap-2"
+          >
+            <span className="text-3xl">📊</span>
+            <span className="tracking-wider">株アナ</span>
           </Link>
-
-          {/* ナビゲーション */}
-          <Navigation />
-
-          {/* ユーザー情報 */}
-          {user ? (
-            <UserDisplay user={user} onLogout={handleLogout} />
-          ) : (
-            <GuestActions />
-          )}
+          <nav className="flex gap-8">
+            <Link
+              href="/analysis"
+              className="text-[#fff8dc] hover:text-[#d4af37] transition-colors font-semibold"
+            >
+              分析
+            </Link>
+            <Link
+              href="/login"
+              className="text-[#fff8dc] hover:text-[#d4af37] transition-colors font-semibold"
+            >
+              ログイン
+            </Link>
+          </nav>
+        </div>
+      </div>
+      <div className="ukiyoe-stamp flex items-center gap-2 md:gap-3">
+        <div className="ukiyoe-insho text-sm">株</div>
+        {/* A8.net ヘッダー広告 (デスクトップ: 120x90px) */}
+        <div className="hidden md:block flex items-center justify-center">
+          <div id="a8net-header-desktop-ad">
+            <a
+              href="https://px.a8.net/svt/ejp?a8mat=45FV1Z+56CP4I+1WP2+6DZBL"
+              rel="nofollow"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                width="120"
+                height="90"
+                alt="A8.net広告"
+                src="https://www26.a8.net/svt/bgt?aid=251002871313&wid=001&eno=01&mid=s00000008903001073000&mc=1"
+                style={{ border: 0 }}
+              />
+            </a>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              width="1"
+              height="1"
+              src="https://www14.a8.net/0.gif?a8mat=45FV1Z+56CP4I+1WP2+6DZBL"
+              alt=""
+              style={{ border: 0 }}
+            />
+          </div>
+        </div>
+        {/* A8.net ヘッダー広告 (モバイル: 64x48px) */}
+        <div className="md:hidden w-16 h-12 flex items-center justify-center">
+          <div id="a8net-header-mobile-ad">
+            {/* A8.netの広告コードをここに貼り付けてください */}
+            <div className="text-xs text-gray-400 text-center">
+              A8.net
+              <br />
+              広告
+            </div>
+          </div>
         </div>
       </div>
     </header>

@@ -1,17 +1,17 @@
+import type { Metadata } from "next";
+import { Noto_Serif_JP } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "./contexts/AuthContext";
 
-export const metadata = {
-  title: "kabu-ana",
-  description: "AI株式分析の新しい形",
-  icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "32x32", type: "image/x-icon" },
-    ],
-    shortcut: "/favicon.ico",
-    apple: "/favicon.svg",
-  },
+const notoSerif = Noto_Serif_JP({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-noto-serif-jp",
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "株式分析AI - カブアナ",
+  description: "複数のAIによる包括的な株式分析システム",
 };
 
 export default function RootLayout({
@@ -20,23 +20,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja">
-      <body>
-        <AuthProvider>{children}</AuthProvider>
-        {/* dev stamp */}
-        <div
-          style={{
-            position: "fixed",
-            bottom: 8,
-            right: 8,
-            fontSize: 12,
-            opacity: 0.6,
-            zIndex: 9999,
-          }}
-        >
-          DEV {process.env.NODE_ENV} @{" "}
-          {typeof window !== "undefined" ? location.href : "ssr"}
-        </div>
+    <html lang="ja" className="h-full">
+      <body
+        className={`${notoSerif.variable} min-h-full bg-ukiyoe-base text-ukiyoe-ink antialiased`}
+      >
+        {children}
       </body>
     </html>
   );
