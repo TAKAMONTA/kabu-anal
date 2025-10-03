@@ -38,16 +38,14 @@ export function CardHeader({ children, className = "" }: CardHeaderProps) {
 
 export function CardTitle({ children, className = "" }: CardTitleProps) {
   return (
-    <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`}>
+    <h3
+      className={`text-2xl font-semibold leading-none tracking-tight ${className}`}
+    >
       {children}
     </h3>
   );
 }
 
 export function CardContent({ children, className = "" }: CardContentProps) {
-  return (
-    <div className={`p-6 pt-0 ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`p-6 pt-0 ${className}`}>{children}</div>;
 }

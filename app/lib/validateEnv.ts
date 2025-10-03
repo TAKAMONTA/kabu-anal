@@ -94,7 +94,7 @@ export function ensureValidEnvironment(): void {
     const errorMessage = [
       "❌ 必須環境変数が設定されていません:",
       "",
-      ...result.missing.map((key) => `  - ${key}`),
+      ...result.missing.map(key => `  - ${key}`),
       "",
       "📝 .env.local ファイルを作成し、以下を参考に設定してください:",
       "   .env.example を参照",
@@ -106,10 +106,17 @@ export function ensureValidEnvironment(): void {
 
   // 警告を出力（エラーではない）- 開発環境のみ
   if (result.warnings.length > 0 && process.env.NODE_ENV === "development") {
-    // eslint-disable-next-line no-console
-    console.warn("⚠️  オプション環境変数の警告:");
-    // eslint-disable-next-line no-console
-    result.warnings.forEach((warning) => console.warn(`  ${warning}`));
+    if (typeof window === "undefined") {
+      // サーバーサイドでのみloggerを使用
+      try {
+        const { logger } = require("./logger");
+        logger.warn({ warnings: result.warnings }, "オプション環境変数の警告");
+      } catch {
+        // logger読み込み失敗時はconsole.warnにフォールバック
+        // eslint-disable-next-line no-console
+        console.warn("⚠️  オプション環境変数の警告:", result.warnings);
+      }
+    }
   }
 }
 
@@ -118,19 +125,40 @@ export function ensureValidEnvironment(): void {
  */
 export function checkEnvInBuild(): void {
   if (process.env.SKIP_ENV_VALIDATION === "true") {
-    // eslint-disable-next-line no-console
-    console.log("⏭️  環境変数検証をスキップしました");
+    if (typeof window === "undefined") {
+      try {
+        const { logger } = require("./logger");
+        logger.info("環境変数検証をスキップしました");
+      } catch {
+        // eslint-disable-next-line no-console
+        console.log("⏭️  環境変数検証をスキップしました");
+      }
+    }
     return;
   }
 
   try {
     ensureValidEnvironment();
-    // eslint-disable-next-line no-console
-    console.log("✅ 環境変数の検証が完了しました");
+    if (typeof window === "undefined") {
+      try {
+        const { logger } = require("./logger");
+        logger.info("環境変数の検証が完了しました");
+      } catch {
+        // eslint-disable-next-line no-console
+        console.log("✅ 環境変数の検証が完了しました");
+      }
+    }
   } catch (error) {
     if (error instanceof Error) {
-      // eslint-disable-next-line no-console
-      console.error(error.message);
+      if (typeof window === "undefined") {
+        try {
+          const { logger } = require("./logger");
+          logger.error({ error: error.message }, "環境変数検証エラー");
+        } catch {
+          // eslint-disable-next-line no-console
+          console.error(error.message);
+        }
+      }
       process.exit(1);
     }
   }

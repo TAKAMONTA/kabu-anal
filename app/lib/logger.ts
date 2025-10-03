@@ -37,7 +37,7 @@ export const logger = pino({
     : undefined,
 
   formatters: {
-    level: (label) => {
+    level: label => {
       return { level: label };
     },
   },
@@ -53,12 +53,12 @@ export const logger = pino({
     },
     redact: {
       paths: [
-        'req.headers.authorization',
-        'req.headers.cookie',
-        'apiKey',
-        'password',
-        'secret',
-        'token',
+        "req.headers.authorization",
+        "req.headers.cookie",
+        "apiKey",
+        "password",
+        "secret",
+        "token",
       ],
       remove: true, // 本番環境では機密情報を完全削除
     },
@@ -119,10 +119,7 @@ export const logAIResponse = (
   success: boolean,
   duration?: number
 ) => {
-  logger.info(
-    { provider, operation, success, duration },
-    "AI API Response"
-  );
+  logger.info({ provider, operation, success, duration }, "AI API Response");
 };
 
 // データ収集ログ
@@ -132,8 +129,5 @@ export const logDataCollection = (
   status: "start" | "success" | "error",
   metadata?: Record<string, unknown>
 ) => {
-  logger.info(
-    { stockCode, phase, status, ...metadata },
-    "Data Collection"
-  );
+  logger.info({ stockCode, phase, status, ...metadata }, "Data Collection");
 };

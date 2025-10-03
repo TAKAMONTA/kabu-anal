@@ -1,25 +1,25 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { auth } from '../lib/firebase';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { auth } from "../lib/firebase";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-} from 'firebase/auth';
+} from "firebase/auth";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
@@ -28,15 +28,15 @@ export default function LoginPage() {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
-      router.push('/analysis');
+      router.push("/analysis");
     } catch (err) {
       const errorCode = (err as { code?: string }).code;
       setError(
-        errorCode === 'auth/invalid-credential'
-          ? 'メールアドレスまたはパスワードが正しくありません'
-          : errorCode === 'auth/email-already-in-use'
-            ? 'このメールアドレスは既に使用されています'
-            : '認証エラーが発生しました'
+        errorCode === "auth/invalid-credential"
+          ? "メールアドレスまたはパスワードが正しくありません"
+          : errorCode === "auth/email-already-in-use"
+            ? "このメールアドレスは既に使用されています"
+            : "認証エラーが発生しました"
       );
     } finally {
       setLoading(false);
@@ -47,7 +47,10 @@ export default function LoginPage() {
     <main className="min-h-screen ukiyoe-layout flex items-center justify-center">
       <div className="w-full max-w-md px-4">
         <div className="mb-6 text-center">
-          <Link href="/" className="text-[#2e4057] hover:text-[#d4af37] font-semibold">
+          <Link
+            href="/"
+            className="text-[#2e4057] hover:text-[#d4af37] font-semibold"
+          >
             ← ホームに戻る
           </Link>
         </div>
@@ -57,7 +60,7 @@ export default function LoginPage() {
             <div className="ukiyoe-insho text-xs">認</div>
           </div>
           <h1 className="text-3xl font-bold text-center mb-6 text-[#2e4057] tracking-wider">
-            {isSignUp ? '新規登録' : 'ログイン'}
+            {isSignUp ? "新規登録" : "ログイン"}
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -68,7 +71,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 className="w-full ukiyoe-input"
                 required
                 disabled={loading}
@@ -82,7 +85,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 className="w-full ukiyoe-input"
                 required
                 disabled={loading}
@@ -101,7 +104,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full ukiyoe-button disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '処理中...' : isSignUp ? '登録' : 'ログイン'}
+              {loading ? "処理中..." : isSignUp ? "登録" : "ログイン"}
             </button>
           </form>
 
@@ -109,13 +112,13 @@ export default function LoginPage() {
             <button
               onClick={() => {
                 setIsSignUp(!isSignUp);
-                setError('');
+                setError("");
               }}
               className="text-[#2e4057] hover:text-[#d4af37] text-sm font-medium"
             >
               {isSignUp
-                ? 'アカウントをお持ちの方はこちら'
-                : 'アカウントをお持ちでない方はこちら'}
+                ? "アカウントをお持ちの方はこちら"
+                : "アカウントをお持ちでない方はこちら"}
             </button>
           </div>
         </div>

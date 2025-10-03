@@ -5,6 +5,7 @@ export interface UnifiedStockData {
     企業名: string;
     収集日時: string;
     データ信頼度: "高" | "中" | "低";
+    データソース?: string[];
   };
   株価情報: {
     現在値: number;
@@ -46,10 +47,12 @@ export interface UnifiedStockData {
     要約: string;
     日時: string;
     URL: string;
+    信頼度?: "高" | "中" | "低";
   }>;
   市場センチメント: {
     総合評価: string;
     理由: string;
+    信頼度?: "高" | "中" | "低";
   };
 }
 

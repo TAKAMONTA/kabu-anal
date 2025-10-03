@@ -5,6 +5,7 @@ import {
   AnalysisPhase,
 } from "@/app/types/analysis";
 import { logger, logDataCollection, logApiError } from "@/app/lib/logger";
+import { validateStockCode } from "@/app/lib/validation";
 
 export async function POST(request: NextRequest) {
   const phases: AnalysisPhase[] = [
@@ -19,16 +20,20 @@ export async function POST(request: NextRequest) {
     const requestBody = await request.json();
     stockCode = requestBody.stockCode;
 
-    if (!stockCode || typeof stockCode !== "string") {
-      return NextResponse.json(
-        { error: "証券コードが必要です" },
-        { status: 400 }
-      );
+    // 入力検証
+    const validation = validateStockCode(stockCode);
+    if (!validation.isValid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
     }
+
+    // 正規化されたコードを使用
+    stockCode = validation.normalizedCode || stockCode;
 
     // Phase 1: データ収集（Perplexity）
     phases[0].status = "processing";
-    logDataCollection(stockCode, "Phase 1", "start", { message: "データ収集開始" });
+    logDataCollection(stockCode, "Phase 1", "start", {
+      message: "データ収集開始",
+    });
 
     const collectResponse = await fetch(
       `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/collect-data`,
@@ -49,7 +54,9 @@ export async function POST(request: NextRequest) {
     const { data: unifiedData } = await collectResponse.json();
     phases[0].status = "completed";
     phases[0].message = `データ取得完了: ${unifiedData.metadata.収集日時}`;
-    logDataCollection(stockCode, "Phase 1", "success", { timestamp: unifiedData.metadata.収集日時 });
+    logDataCollection(stockCode, "Phase 1", "success", {
+      timestamp: unifiedData.metadata.収集日時,
+    });
 
     // Phase 2: 並列AI分析
     phases[1].status = "processing";
@@ -103,7 +110,9 @@ export async function POST(request: NextRequest) {
 
     phases[1].status = "completed";
     phases[1].message = "3つのAI分析完了";
-    logDataCollection(stockCode, "Phase 2", "success", { message: "3つのAI分析完了" });
+    logDataCollection(stockCode, "Phase 2", "success", {
+      message: "3つのAI分析完了",
+    });
 
     // Phase 3: 結果統合
     phases[2].status = "processing";
@@ -120,7 +129,7 @@ export async function POST(request: NextRequest) {
     logDataCollection(stockCode, "Phase 3", "success", {
       message: "分析完了",
       judgement: finalJudgement.判断,
-      confidence: finalJudgement.信頼度
+      confidence: finalJudgement.信頼度,
     });
 
     // 最終レポート
@@ -148,7 +157,7 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error.message : "不明なエラー";
 
     // エラー発生したフェーズを特定
-    const currentPhase = phases.findIndex((p) => p.status === "processing");
+    const currentPhase = phases.findIndex(p => p.status === "processing");
     if (currentPhase !== -1) {
       phases[currentPhase].status = "error";
       phases[currentPhase].message = errorMessage;
@@ -172,18 +181,16 @@ function calculateOverallJudgment(
   openaiResult: AIAnalysisResult
 ): OverallJudgement {
   const analyses = [geminiResult, claudeResult, openaiResult];
-  const recommendations = analyses.map((a) => a.推奨の見立て);
-  const confidences = analyses.map((a) => a.信頼度);
+  const recommendations = analyses.map(a => a.推奨の見立て);
+  const confidences = analyses.map(a => a.信頼度);
 
   // 各判断をカウント
-  const buyCount = recommendations.filter((r) => r === "買い").length;
-  const sellCount = recommendations.filter((r) => r === "売り").length;
-  const holdCount = recommendations.filter((r) => r === "保留").length;
+  const buyCount = recommendations.filter(r => r === "買い").length;
+  const sellCount = recommendations.filter(r => r === "売り").length;
+  const holdCount = recommendations.filter(r => r === "保留").length;
 
   // 平均信頼度
-  const avgConfidence = Math.round(
-    confidences.reduce((a, b) => a + b, 0) / 3
-  );
+  const avgConfidence = Math.round(confidences.reduce((a, b) => a + b, 0) / 3);
 
   // 総合判断を決定
   let overall: "買い" | "売り" | "保留";
@@ -202,16 +209,16 @@ function calculateOverallJudgment(
 
   // 目標株価の統合
   const targetPrices = analyses
-    .map((a) => a.目標株価)
-    .filter((t) => t.下限 !== null && t.上限 !== null);
+    .map(a => a.目標株価)
+    .filter(t => t.下限 !== null && t.上限 !== null);
 
   let integratedTarget: OverallJudgement["目標株価統合"] = null;
   if (targetPrices.length > 0) {
     const lowerBounds = targetPrices
-      .map((t) => t.下限)
+      .map(t => t.下限)
       .filter((v): v is number => v !== null);
     const upperBounds = targetPrices
-      .map((t) => t.上限)
+      .map(t => t.上限)
       .filter((v): v is number => v !== null);
 
     if (lowerBounds.length > 0 && upperBounds.length > 0) {

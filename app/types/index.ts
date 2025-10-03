@@ -11,7 +11,7 @@ export interface StockAnalysis {
   claude: AIAnalysis;
   gemini: AIAnalysis;
   finalJudgement: {
-    decision: '買い' | '売り' | '保留';
+    decision: "買い" | "売り" | "保留";
     reasoning: string;
     confidence: number;
   };

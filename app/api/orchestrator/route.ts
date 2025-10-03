@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { logger, logAIRequest, logAIResponse, logApiError } from "@/app/lib/logger";
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const anthropic = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY });
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+import { logger, logApiError } from "@/app/lib/logger";
+import { validateStockCode } from "@/app/lib/validation";
+import { assessDataQuality, generateDataQualityReport } from "@/app/lib/data-quality";
 
 interface AIResponse {
   analysis: string;
@@ -17,12 +12,33 @@ interface AIResponse {
 
 type Decision = "買い" | "売り" | "保留";
 
+interface FinancialMetrics {
+  PER?: number | null;
+  PBR?: number | null;
+  ROE?: number | null;
+  配当利回り?: number | null;
+}
+
+interface TechnicalMetrics {
+  MA25?: number | null;
+  MA75?: number | null;
+  MA200?: number | null;
+  RSI?: number | null;
+  MACD?: {
+    値?: number | null;
+    シグナル?: number | null;
+    ヒストグラム?: number | null;
+  } | null;
+}
+
 interface StructuredAnalysis {
   summary?: string;
   price?: {
     current?: string;
     range?: string;
   };
+  financialMetrics?: FinancialMetrics;
+  technicalMetrics?: TechnicalMetrics;
   trend?: string;
   fundamentals?: string;
   rationale?: string;
@@ -33,59 +49,121 @@ interface StructuredAnalysis {
 
 export async function POST(request: NextRequest) {
   try {
-    const { stockCode } = await request.json();
+    let { stockCode } = await request.json();
 
-    if (!stockCode || typeof stockCode !== "string") {
-      return NextResponse.json(
-        { error: "銘柄コードが必要です" },
-        { status: 400 }
+    // 入力検証
+    const validation = validateStockCode(stockCode);
+    if (!validation.isValid) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    // 正規化されたコードを使用
+    stockCode = validation.normalizedCode || stockCode;
+
+    logger.info({ stockCode }, "データ収集開始");
+
+    // Phase 1: データ収集
+    const collectResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/collect-data`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stockCode }),
+      }
+    );
+
+    if (!collectResponse.ok) {
+      const errorData = await collectResponse.json();
+      throw new Error(
+        `データ収集に失敗: ${errorData.error || errorData.details}`
       );
     }
 
-    // 各AIに専門的な役割を割り当て
-    const geminiPrompt = createPrompt({
-      role: "テクニカル分析担当",
-      stockCode,
-      focus: [
-        "現在のトレンド（上昇/下降/横ばい）",
-        "移動平均線との位置関係（25日、75日、200日線）",
-        "サポート/レジスタンスライン",
-        "出来高トレンド",
-        "テクニカル指標（RSI、MACD等)",
-      ],
-    });
+    const collectResult = await collectResponse.json();
+    const unifiedData = collectResult.data;
 
-    const claudePrompt = createPrompt({
-      role: "ファンダメンタル分析担当",
-      stockCode,
-      focus: [
-        "最新決算の状況（売上、利益、成長率）",
-        "財務健全性（自己資本比率、ROE、ROA）",
-        "バリュエーション（PER、PBR、配当利回り）",
-        "業界動向と競合比較",
-        "将来性とリスク要因",
-      ],
-    });
+    // データ品質チェック
+    const dataQuality = assessDataQuality(unifiedData);
+    const qualityReport = generateDataQualityReport(dataQuality);
 
-    const openaiPrompt = createPrompt({
-      role: "総合分析担当",
-      stockCode,
-      focus: [
-        "市場全体の環境",
-        "企業の強み・弱み",
-        "短期/中期/長期の見通し",
-        "投資判断（買い/売り/保留）とその根拠",
-        "推奨価格レンジ",
-        "注意すべきリスク",
-      ],
-    });
+    logger.info(
+      {
+        stockCode,
+        hasData: !!unifiedData,
+        hasStockPrice: !!unifiedData?.株価情報,
+        currentPrice: unifiedData?.株価情報?.現在値,
+        dataQualityScore: dataQuality.score,
+        isAdequate: dataQuality.isAdequate,
+        unifiedData: JSON.stringify(unifiedData),
+      },
+      "データ収集完了、品質チェック実施"
+    );
 
-    // 並列でAI分析を実行
-    const [openaiResult, claudeResult, geminiResult] = await Promise.all([
-      analyzeWithOpenAI(openaiPrompt),
-      analyzeWithClaude(claudePrompt),
-      analyzeWithGemini(geminiPrompt),
+    // データ品質が不十分な場合は警告を返す（ただし分析は継続）
+    if (!dataQuality.isAdequate) {
+      logger.warn(
+        {
+          stockCode,
+          score: dataQuality.score,
+          missingFields: dataQuality.missingFields,
+        },
+        "データ品質が不十分ですが、分析を継続します"
+      );
+    }
+
+    // Phase 2: 並列AI分析
+    const [geminiResponse, claudeResponse, openaiResponse] = await Promise.all([
+      fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/analyze-gemini`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ unifiedData }),
+        }
+      ),
+      fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/analyze-claude`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ unifiedData }),
+        }
+      ),
+      fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/analyze-openai`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ unifiedData }),
+        }
+      ),
     ]);
+
+    // エラーチェック
+    const responses = [
+      { name: "Gemini", response: geminiResponse },
+      { name: "Claude", response: claudeResponse },
+      { name: "OpenAI", response: openaiResponse },
+    ];
+
+    for (const { name, response } of responses) {
+      if (!response.ok) {
+        const errorData = await response.json();
+        logger.error({ ai: name, error: errorData }, `${name}分析エラー`);
+        throw new Error(`${name}分析に失敗: ${errorData.error}`);
+      }
+    }
+
+    const geminiData = await geminiResponse.json();
+    const claudeData = await claudeResponse.json();
+    const openaiData = await openaiResponse.json();
+
+    logger.info({ stockCode }, "AI分析完了、結果統合開始");
+
+    // AI分析結果を変換
+    const geminiResult = convertToAIResponse(geminiData.result);
+    const claudeResult = convertToAIResponse(claudeData.result);
+    const openaiResult = convertToAIResponse(openaiData.result);
 
     // 最終判断を生成
     const finalJudgement = generateFinalJudgement(
@@ -94,6 +172,8 @@ export async function POST(request: NextRequest) {
       geminiResult
     );
 
+    logger.info({ stockCode, decision: finalJudgement.decision }, "分析完了");
+
     return NextResponse.json({
       stockCode,
       timestamp: new Date().toISOString(),
@@ -101,6 +181,12 @@ export async function POST(request: NextRequest) {
       claude: claudeResult,
       gemini: geminiResult,
       finalJudgement,
+      dataQuality: {
+        score: dataQuality.score,
+        isAdequate: dataQuality.isAdequate,
+        report: qualityReport,
+        details: dataQuality.details,
+      },
     });
   } catch (error) {
     logApiError("POST", "/api/orchestrator", error);
@@ -111,93 +197,188 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function analyzeWithOpenAI(prompt: string): Promise<AIResponse> {
-  const startTime = Date.now();
-  try {
-    logAIRequest("OpenAI", "chat.completions", { model: "gpt-4o-mini" });
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_tokens: 800,
-    });
-
-    const content =
-      completion.choices[0]?.message?.content || "分析できませんでした";
-
-    const duration = Date.now() - startTime;
-    logAIResponse("OpenAI", "chat.completions", true, duration);
-    return createAIResponse(content, 0.8);
-  } catch {
-    const duration = Date.now() - startTime;
-    logAIResponse("OpenAI", "chat.completions", false, duration);
-    return {
-      analysis: "OpenAI分析でエラーが発生しました",
-      recommendation: "保留",
-      confidence: 0,
-    };
-  }
+// 分析テキストから数値を抽出するヘルパー関数
+function extractNumberFromText(text: string, pattern: RegExp): number | null {
+  const match = text.match(pattern);
+  if (!match) return null;
+  const value = parseFloat(match[1].replace(/,/g, ""));
+  return isNaN(value) ? null : value;
 }
 
-async function analyzeWithClaude(prompt: string): Promise<AIResponse> {
-  const startTime = Date.now();
-  try {
-    logAIRequest("Claude", "messages.create", { model: "claude-3-5-sonnet-20241022" });
-    const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 1000,
-      messages: [{ role: "user", content: prompt }],
-    });
+// AI分析結果を共通のAIResponse形式に変換
+function convertToAIResponse(result: {
+  AI名: string;
+  専門分野: string;
+  推奨の見立て: Decision;
+  信頼度: number;
+  分析内容: Record<string, unknown>;
+  リスク要因?: string[];
+  目標株価?: {
+    下限: number | null;
+    上限: number | null;
+  };
+  投資期間?: string;
+}): AIResponse {
+  // 分析内容から主要な情報を抽出
+  const analysisContent = result.分析内容;
+  const stockInfo = analysisContent.株価情報 as
+    | { 現在値: number; 前日比?: string; 注: string }
+    | undefined;
 
-    const content =
-      message.content[0]?.type === "text"
-        ? message.content[0].text
-        : "分析できませんでした";
+  // 分析テキストを生成
+  let analysisText = `【${result.専門分野}】\n`;
 
-    const duration = Date.now() - startTime;
-    logAIResponse("Claude", "messages.create", true, duration);
-    return createAIResponse(content, 0.85);
-  } catch {
-    const duration = Date.now() - startTime;
-    logAIResponse("Claude", "messages.create", false, duration);
-    return {
-      analysis: "Claude分析でエラーが発生しました",
-      recommendation: "保留",
-      confidence: 0,
-    };
+  // 各分析項目を整形（株価情報は別途処理）
+  for (const [key, value] of Object.entries(analysisContent)) {
+    if (key === "株価情報") continue;
+    if (typeof value === "string" && value.trim()) {
+      analysisText += `${key}\n${value}\n\n`;
+    }
   }
-}
 
-async function analyzeWithGemini(prompt: string): Promise<AIResponse> {
-  const startTime = Date.now();
-  try {
-    logAIRequest("Gemini", "generateContent", { model: "gemini-2.5-flash" });
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const result = await model.generateContent(prompt);
-    const content = result.response.text() || "分析できませんでした";
-
-    const duration = Date.now() - startTime;
-    logAIResponse("Gemini", "generateContent", true, duration);
-    return createAIResponse(content, 0.75);
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    logAIResponse("Gemini", "generateContent", false, duration);
-    return {
-      analysis: `Gemini分析でエラーが発生しました: ${errorMessage}`,
-      recommendation: "保留",
-      confidence: 0,
-    };
+  // リスク要因を追加
+  if (result.リスク要因 && result.リスク要因.length > 0) {
+    analysisText += `リスク要因\n${result.リスク要因.map(r => `・${r}`).join("\n")}`;
   }
-}
 
-function extractRecommendation(text: string): Decision {
-  if (text.includes("買い") || text.includes("購入")) return "買い";
-  if (text.includes("売り") || text.includes("売却")) return "売り";
-  if (text.includes("保留") || text.includes("中立") || text.includes("様子見"))
-    return "保留";
-  return "保留";
+  // 財務指標を抽出（オブジェクトまたはテキストから）
+  const financialMetricsObj = analysisContent.財務指標サマリー as
+    | FinancialMetrics
+    | undefined;
+
+  // テキストから財務指標を抽出
+  const extractedFinancials = {
+    PER: extractNumberFromText(analysisText, /PER[:\s]+([0-9.]+)/i),
+    PBR: extractNumberFromText(analysisText, /PBR[:\s]+([0-9.]+)/i),
+    ROE: extractNumberFromText(analysisText, /ROE[:\s]+([0-9.]+)/i),
+    配当利回り: extractNumberFromText(analysisText, /配当利回り[:\s]+([0-9.]+)/i),
+  };
+
+  const financialMetrics = financialMetricsObj || (
+    Object.values(extractedFinancials).some(v => v !== null)
+      ? extractedFinancials
+      : undefined
+  );
+
+  // テクニカル指標を抽出（オブジェクトまたはテキストから）
+  const technicalMetricsObj = analysisContent.テクニカル指標サマリー as
+    | TechnicalMetrics
+    | undefined;
+
+  // テキストからテクニカル指標を抽出
+  const extractedTechnicals = {
+    MA25: extractNumberFromText(analysisText, /MA25[:\s]+([0-9,]+)/i),
+    MA75: extractNumberFromText(analysisText, /MA75[:\s]+([0-9,]+)/i),
+    MA200: extractNumberFromText(analysisText, /MA200[:\s]+([0-9,]+)/i),
+    RSI: extractNumberFromText(analysisText, /RSI[:\s]+([0-9.]+)/i),
+  };
+
+  const technicalMetrics = technicalMetricsObj || (
+    Object.values(extractedTechnicals).some(v => v !== null)
+      ? extractedTechnicals
+      : undefined
+  );
+
+  // 株価情報を抽出（オブジェクトまたはテキストから）
+  let priceInfo = stockInfo
+    ? {
+        current: stockInfo.前日比
+          ? `${stockInfo.現在値}円 (${stockInfo.前日比})`
+          : `${stockInfo.現在値}円`,
+        range:
+          result.目標株価 && result.目標株価.下限 && result.目標株価.上限
+            ? `${result.目標株価.下限}円〜${result.目標株価.上限}円`
+            : undefined,
+      }
+    : undefined;
+
+  // テキストから株価情報を抽出
+  if (!priceInfo) {
+    const currentPrice = extractNumberFromText(analysisText, /現在値[:\s]+([0-9,]+)/i) ||
+                        extractNumberFromText(analysisText, /株価[:\s]+([0-9,]+)/i);
+    const targetPriceLower = extractNumberFromText(analysisText, /目標株価[:\s]+([0-9,]+)/i) ||
+                             extractNumberFromText(analysisText, /¥([0-9,]+)\s*〜/i);
+    const targetPriceUpper = extractNumberFromText(analysisText, /〜\s*¥([0-9,]+)/i);
+
+    if (currentPrice || targetPriceLower || targetPriceUpper || result.目標株価) {
+      priceInfo = {
+        current: currentPrice ? `${currentPrice.toLocaleString()}円` : undefined,
+        range:
+          result.目標株価?.下限 && result.目標株価?.上限
+            ? `${result.目標株価.下限.toLocaleString()}円〜${result.目標株価.上限.toLocaleString()}円`
+            : targetPriceLower && targetPriceUpper
+              ? `${targetPriceLower.toLocaleString()}円〜${targetPriceUpper.toLocaleString()}円`
+              : undefined,
+      };
+    }
+  }
+
+  // 構造化データを作成
+  const structured: StructuredAnalysis = {
+    summary: analysisText.substring(0, 200),
+    price: priceInfo,
+    financialMetrics: financialMetrics
+      ? {
+          PER: financialMetrics.PER ?? null,
+          PBR: financialMetrics.PBR ?? null,
+          ROE: financialMetrics.ROE ?? null,
+          配当利回り: financialMetrics.配当利回り ?? null,
+        }
+      : undefined,
+    technicalMetrics: technicalMetrics
+      ? {
+          MA25: technicalMetrics.MA25 ?? null,
+          MA75: technicalMetrics.MA75 ?? null,
+          MA200: technicalMetrics.MA200 ?? null,
+          RSI: technicalMetrics.RSI ?? null,
+          MACD: technicalMetrics.MACD ?? null,
+        }
+      : undefined,
+    trend:
+      typeof analysisContent.トレンド分析 === "string"
+        ? analysisContent.トレンド分析
+        : typeof analysisContent.テクニカル総合 === "string"
+          ? analysisContent.テクニカル総合
+          : typeof analysisContent.移動平均線 === "string"
+            ? analysisContent.移動平均線
+            : undefined,
+    fundamentals:
+      typeof analysisContent.ファンダメンタル総合 === "string"
+        ? analysisContent.ファンダメンタル総合
+        : typeof analysisContent.財務健全性 === "string"
+          ? analysisContent.財務健全性
+          : typeof analysisContent.収益性評価 === "string"
+            ? analysisContent.収益性評価
+            : undefined,
+    rationale:
+      typeof analysisContent.投資判断理由 === "string"
+        ? analysisContent.投資判断理由
+        : typeof analysisContent.投資価値 === "string"
+          ? analysisContent.投資価値
+          : typeof analysisContent.推奨理由 === "string"
+            ? analysisContent.推奨理由
+            : undefined,
+    risks:
+      result.リスク要因 && result.リスク要因.length > 0
+        ? result.リスク要因.join("、")
+        : undefined,
+    targetRange:
+      result.目標株価 && result.目標株価.下限 && result.目標株価.上限
+        ? `${result.目標株価.下限}円〜${result.目標株価.上限}円`
+        : result.目標株価 && (result.目標株価.下限 || result.目標株価.上限)
+          ? result.目標株価.下限
+            ? `${result.目標株価.下限}円以上`
+            : `${result.目標株価.上限}円以下`
+          : undefined,
+    horizon: result.投資期間,
+  };
+
+  return {
+    analysis: analysisText,
+    recommendation: result.推奨の見立て,
+    confidence: result.信頼度 / 100, // 0-100を0-1に変換
+    structured,
+  };
 }
 
 function generateFinalJudgement(
@@ -241,141 +422,3 @@ function generateFinalJudgement(
   return { decision, reasoning, confidence };
 }
 
-function createPrompt({
-  role,
-  stockCode,
-  focus,
-}: {
-  role: string;
-  stockCode: string;
-  focus: string[];
-}) {
-  return `あなたは${role}の専門家です。日本株式銘柄コード${stockCode}について、以下の観点を考慮して分析してください。
-
-${focus.map((item, index) => `${index + 1}. ${item}`).join("\n")}
-
-以下のJSON形式のみで日本語で出力してください。説明文や前後のコメントは一切不要です。
-{
-  "summary": "主要な結論を120文字以内で要約",
-  "recommendation": "買い/売り/保留のいずれか",
-  "confidence": 0から1の小数 (0.0〜1.0),
-  "price": {
-    "current": "現在値（例: 3,750円）",
-    "range": "目標価格レンジ（例: 3,450円〜3,900円）"
-  },
-  "trend": "トレンドや移動平均・出来高の要約",
-  "fundamentals": "財務・バリュエーション等の要約",
-  "rationale": "推奨の根拠 (80文字以内)",
-  "risks": "主要なリスク (80文字以内)",
-  "targetRange": "目標株価レンジ",
-  "horizon": "想定する投資期間（短期/中期/長期など）"
-}
-
-未知の項目はnullではなく空文字列で記載してください。`;
-}
-
-function createAIResponse(
-  content: string,
-  fallbackConfidence: number
-): AIResponse {
-  const parsed = parseStructuredResponse(content, fallbackConfidence);
-  if (parsed) {
-    return parsed;
-  }
-
-  return {
-    analysis: content,
-    recommendation: extractRecommendation(content),
-    confidence: fallbackConfidence,
-  };
-}
-
-function parseStructuredResponse(
-  content: string,
-  fallbackConfidence: number
-): AIResponse | null {
-  const jsonString = extractJsonString(content);
-  if (!jsonString) return null;
-
-  try {
-    const data = JSON.parse(jsonString);
-    const summary =
-      typeof data.summary === "string" && data.summary.trim().length > 0
-        ? data.summary.trim()
-        : content;
-    const recommendation = normalizeDecision(data.recommendation, content);
-    const confidence = normalizeConfidence(data.confidence, fallbackConfidence);
-
-    const structured: StructuredAnalysis = {
-      summary,
-      price: {
-        current: sanitizeString(data.price?.current),
-        range: sanitizeString(data.price?.range ?? data.targetRange),
-      },
-      trend: sanitizeString(data.trend),
-      fundamentals: sanitizeString(data.fundamentals),
-      rationale: sanitizeString(data.rationale ?? data.reason),
-      risks: sanitizeString(data.risks),
-      targetRange: sanitizeString(data.targetRange ?? data.price?.target),
-      horizon: sanitizeString(data.horizon ?? data.timeframe),
-    };
-
-    return {
-      analysis: summary,
-      recommendation,
-      confidence,
-      structured,
-    };
-  } catch (error) {
-    logger.warn({ error: error instanceof Error ? error.message : String(error) }, "Failed to parse structured response");
-    return null;
-  }
-}
-
-function extractJsonString(content: string): string | null {
-  const start = content.indexOf("{");
-  const end = content.lastIndexOf("}");
-  if (start === -1 || end === -1 || end <= start) {
-    return null;
-  }
-  return content.slice(start, end + 1).trim();
-}
-
-function normalizeDecision(value: unknown, fallbackText: string): Decision {
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (trimmed === "買い" || trimmed === "買") return "買い";
-    if (trimmed === "売り" || trimmed === "売") return "売り";
-    if (trimmed === "保留" || trimmed === "中立" || trimmed === "様子見")
-      return "保留";
-  }
-  return extractRecommendation(
-    typeof value === "string" ? value : fallbackText
-  );
-}
-
-function normalizeConfidence(value: unknown, fallback: number): number {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return clampConfidence(value);
-  }
-  if (typeof value === "string") {
-    const parsed = parseFloat(value);
-    if (!Number.isNaN(parsed)) {
-      return clampConfidence(parsed);
-    }
-  }
-  return fallback;
-}
-
-function clampConfidence(value: number): number {
-  if (value > 1 && value <= 100) {
-    return Math.min(1, Math.max(0, value / 100));
-  }
-  return Math.min(1, Math.max(0, value));
-}
-
-function sanitizeString(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}

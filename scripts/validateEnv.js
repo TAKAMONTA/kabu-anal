@@ -36,8 +36,10 @@ function checkEnvInBuild() {
 
   if (missing.length > 0) {
     console.error("❌ 必須環境変数が設定されていません:\n");
-    missing.forEach((key) => console.error(`  - ${key}`));
-    console.error("\n📝 .env.local ファイルを作成し、.env.example を参照してください\n");
+    missing.forEach(key => console.error(`  - ${key}`));
+    console.error(
+      "\n📝 .env.local ファイルを作成し、.env.example を参照してください\n"
+    );
     process.exit(1);
   }
 
