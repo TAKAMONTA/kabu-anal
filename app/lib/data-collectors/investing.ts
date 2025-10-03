@@ -1,4 +1,12 @@
-import { CollectorResult, DataSource } from "./types";
+import { CollectorResult, DataSource, StockData } from "./types";
+
+interface NewsItem {
+  タイトル: string;
+  要約: string;
+  日時: string;
+  URL: string;
+  信頼度?: "高" | "中" | "低";
+}
 
 export class InvestingCollector {
   private readonly source: DataSource = {
@@ -12,7 +20,7 @@ export class InvestingCollector {
   async collectStockData(stockCode: string): Promise<CollectorResult> {
     const isJapaneseStock = /^\d+$/.test(stockCode);
     const errors: string[] = [];
-    const data: Partial<any> = {};
+    const data: Partial<StockData> = {};
 
     try {
       // Investing.comの企業ページURL
@@ -146,10 +154,12 @@ JSON形式で以下の構造で**正確に**出力してください：
       }
 
       if (investingData.最新ニュース) {
-        data.最新ニュース = investingData.最新ニュース.map((news: any) => ({
-          ...news,
-          信頼度: "中" as const,
-        }));
+        data.最新ニュース = investingData.最新ニュース.map(
+          (news: NewsItem) => ({
+            ...news,
+            信頼度: "中" as const,
+          })
+        );
       }
 
       data.metadata = {

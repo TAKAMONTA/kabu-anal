@@ -1,4 +1,12 @@
-import { CollectorResult, DataSource } from "./types";
+import { CollectorResult, DataSource, StockData } from "./types";
+
+interface NewsItem {
+  タイトル: string;
+  要約: string;
+  日時: string;
+  URL: string;
+  信頼度?: "高" | "中" | "低";
+}
 
 export class YahooFinanceCollector {
   private readonly source: DataSource = {
@@ -17,7 +25,7 @@ export class YahooFinanceCollector {
       : `https://finance.yahoo.com/quote/${symbol}`;
 
     const errors: string[] = [];
-    const data: Partial<any> = {};
+    const data: Partial<StockData> = {};
 
     try {
       const apiKey = process.env.PERPLEXITY_API_KEY;
@@ -182,7 +190,7 @@ JSONで以下の構造に沿って**正確に**回答してください。
       }
 
       if (yahooData.最新ニュース) {
-        data.最新ニュース = yahooData.最新ニュース.map((news: any) => ({
+        data.最新ニュース = yahooData.最新ニュース.map((news: NewsItem) => ({
           ...news,
           信頼度: "高" as const,
         }));

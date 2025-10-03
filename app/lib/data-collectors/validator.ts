@@ -169,7 +169,7 @@ export class DataValidator {
     };
   }
 
-  private getNestedValue(obj: any, path: string): any {
+  private getNestedValue(obj: Record<string, unknown>, path: string): unknown {
     return path.split(".").reduce((current, key) => current?.[key], obj);
   }
 

@@ -1,6 +1,14 @@
 import { StockData, CollectorResult, DataCollectionConfig } from "./types";
 import { DataValidator } from "./validator";
 
+interface NewsItem {
+  タイトル: string;
+  要約: string;
+  日時: string;
+  URL: string;
+  信頼度?: "高" | "中" | "低";
+}
+
 export class DataAggregator {
   private validator: DataValidator;
 
@@ -169,7 +177,7 @@ export class DataAggregator {
     }
 
     // ニュースの統合（複数ソースから収集）
-    const allNews: any[] = [];
+    const allNews: NewsItem[] = [];
     results.forEach(result => {
       if (result.data.最新ニュース && result.data.最新ニュース.length > 0) {
         allNews.push(...result.data.最新ニュース);
@@ -202,7 +210,7 @@ export class DataAggregator {
     return merged;
   }
 
-  private deduplicateNews(newsList: any[]): any[] {
+  private deduplicateNews(newsList: NewsItem[]): NewsItem[] {
     const seen = new Set<string>();
     return newsList
       .filter(news => {

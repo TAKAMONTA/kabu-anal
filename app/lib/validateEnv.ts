@@ -87,7 +87,7 @@ export function validateEnvironment(): ValidationResult {
  * 環境変数検証とエラーハンドリング
  * 起動時に呼び出すことを推奨
  */
-export function ensureValidEnvironment(): void {
+export async function ensureValidEnvironment(): Promise<void> {
   const result = validateEnvironment();
 
   if (!result.isValid) {
@@ -109,7 +109,7 @@ export function ensureValidEnvironment(): void {
     if (typeof window === "undefined") {
       // サーバーサイドでのみloggerを使用
       try {
-        const { logger } = require("./logger");
+        const { logger } = await import("./logger");
         logger.warn({ warnings: result.warnings }, "オプション環境変数の警告");
       } catch {
         // logger読み込み失敗時はconsole.warnにフォールバック
@@ -123,11 +123,11 @@ export function ensureValidEnvironment(): void {
 /**
  * 開発環境での環境変数チェック（Next.jsのビルド時）
  */
-export function checkEnvInBuild(): void {
+export async function checkEnvInBuild(): Promise<void> {
   if (process.env.SKIP_ENV_VALIDATION === "true") {
     if (typeof window === "undefined") {
       try {
-        const { logger } = require("./logger");
+        const { logger } = await import("./logger");
         logger.info("環境変数検証をスキップしました");
       } catch {
         // eslint-disable-next-line no-console
@@ -138,10 +138,10 @@ export function checkEnvInBuild(): void {
   }
 
   try {
-    ensureValidEnvironment();
+    await ensureValidEnvironment();
     if (typeof window === "undefined") {
       try {
-        const { logger } = require("./logger");
+        const { logger } = await import("./logger");
         logger.info("環境変数の検証が完了しました");
       } catch {
         // eslint-disable-next-line no-console
@@ -152,7 +152,7 @@ export function checkEnvInBuild(): void {
     if (error instanceof Error) {
       if (typeof window === "undefined") {
         try {
-          const { logger } = require("./logger");
+          const { logger } = await import("./logger");
           logger.error({ error: error.message }, "環境変数検証エラー");
         } catch {
           // eslint-disable-next-line no-console

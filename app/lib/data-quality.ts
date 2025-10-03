@@ -18,7 +18,9 @@ export interface DataQualityResult {
   };
 }
 
-export function assessDataQuality(data: any): DataQualityResult {
+export function assessDataQuality(
+  data: Record<string, unknown>
+): DataQualityResult {
   const missingFields: string[] = [];
   const availableFields: string[] = [];
 
@@ -86,7 +88,8 @@ export function assessDataQuality(data: any): DataQualityResult {
       missingFields.push(`財務指標.${field}`);
     }
   }
-  const financialMetricsRate = (financialAvailable / financialFields.length) * 100;
+  const financialMetricsRate =
+    (financialAvailable / financialFields.length) * 100;
 
   // ニュースのチェック
   const newsAvailable =
@@ -142,9 +145,7 @@ export function assessDataQuality(data: any): DataQualityResult {
 /**
  * データ品質レポートを生成
  */
-export function generateDataQualityReport(
-  quality: DataQualityResult
-): string {
+export function generateDataQualityReport(quality: DataQualityResult): string {
   let report = `【データ品質評価】\n`;
   report += `総合スコア: ${quality.score}/100\n`;
   report += `分析可否: ${quality.isAdequate ? "✅ 分析可能" : "⚠️ データ不足"}\n\n`;

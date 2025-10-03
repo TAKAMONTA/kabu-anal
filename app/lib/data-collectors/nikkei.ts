@@ -1,4 +1,12 @@
-import { CollectorResult, DataSource } from "./types";
+import { CollectorResult, DataSource, StockData } from "./types";
+
+interface NewsItem {
+  タイトル: string;
+  要約: string;
+  日時: string;
+  URL: string;
+  信頼度?: "高" | "中" | "低";
+}
 
 export class NikkeiCollector {
   private readonly source: DataSource = {
@@ -11,7 +19,7 @@ export class NikkeiCollector {
 
   async collectStockData(stockCode: string): Promise<CollectorResult> {
     const errors: string[] = [];
-    const data: Partial<any> = {};
+    const data: Partial<StockData> = {};
 
     try {
       // 日経電子版の企業ページURL
@@ -158,7 +166,7 @@ JSON形式で以下の構造で**正確に**出力してください：
       }
 
       if (nikkeiData.最新ニュース) {
-        data.最新ニュース = nikkeiData.最新ニュース.map((news: any) => ({
+        data.最新ニュース = nikkeiData.最新ニュース.map((news: NewsItem) => ({
           ...news,
           信頼度: "高" as const,
         }));
